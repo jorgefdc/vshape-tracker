@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import {MarchingCubes} from 'three/examples/jsm/objects/MarchingCubes.js';
 const EX={
  ombros:['Elevação lateral','Desenvolvimento com halteres','Crucifixo inverso'],
  peito:['Supino reto','Supino inclinado','Crossover na polia'],
@@ -22,66 +23,75 @@ function skinTexture(){
  ctx.putImageData(im,0,0);const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,5);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 function createFigure(m,sex,fat,definition,veins){
- const group=new THREE.Group(),materials=[],texture=skinTexture(),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:.68,metalness:0,clearcoat:.06,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.68}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
- materials.push(skin,accent,foldMat,veinMat);
- const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
- const fatScale=1+(f-.8)*.15;
- function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=true;mesh.receiveShadow=true;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
- function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,28,20),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
- function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),22,7),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
- // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
- const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale],[1.92,.33*wa*fatScale,.23*wa*fatScale],[1.73,.38*hi,.255*hi],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
- const verts=[],indices=[],segments=48;
- rings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
- for(let i=0;i<rings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
- ellipsoid(0,3.18,0,.19,.255,.19,null);tapered(0,2.77,0,0,2.98,0,.11,.105,null);
- // Face features: ears, nose, brow, subtle eyes, hair cap.
- for(const side of [-1,1])ellipsoid(side*.19,3.17,0,.043,.082,.045,null);
- ellipsoid(0,3.15,.193,.049,.07,.065,null);
- const eyeMat=new THREE.MeshStandardMaterial({color:0x332c29,roughness:.8});materials.push(eyeMat);
- for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
- // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
+ // Implicit surface: all limbs and torso blend into ONE continuous skin mesh.
+ // No overlapping spheres/cylinders or visible seams at the joints.
+ const group=new THREE.Group(),texture=skinTexture(),isFemale=sex==='female';
+ const skin=new THREE.MeshPhysicalMaterial({color:0xffd2b6,map:texture,roughness:.82,metalness:0,clearcoat:.025,side:THREE.DoubleSide});
+ const f=clamp(fat,8,50),mus=clamp(definition/100,0,1);
+ const sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.91:1);
+ const ch=clamp(val(m?.chest,98)/98,.75,1.35);
+ const wa=clamp(val(m?.waist,82)/82,.7,1.6);
+ const hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.12:1);
+ const ar=clamp(val(m?.arm,33)/33,.65,1.6);
+ const th=clamp(val(m?.thigh,55)/55,.7,1.5);
+ const ca=clamp(val(m?.calf,36)/36,.65,1.5);
+ const bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
+ const fatExpand=1+Math.max(0,f-19)*.011,definitionFactor=1+mus*.07;
+ const effect=new MarchingCubes(72,skin,false,false,200000);
+ effect.enableUvs=true;effect.enableColors=false;effect.isolation=80;effect.reset();
+ // addBall uses normalized [0..1] coordinates; mesh uses [-1..1] positions.
+ // Several smaller, overlapping influences create smooth, continuous anatomical transitions.
+ const add=(x,y,z,r,weight=1)=>{
+   const nx=(x+2.25)/4.5,ny=(y+.45)/4.5,nz=(z+2.25)/4.5;
+   const radius=r/4.5;
+   effect.addBall(nx,ny,nz,Math.max(.02,12*radius*radius*weight),12);
+ };
+ const chain=(a,b,r1,r2,count=6)=>{
+   for(let i=0;i<=count;i++){const t=i/count;add(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t,r1+(r2-r1)*t,1.3)}
+ };
+ // Anatomical core: shoulders transition continuously into chest, waist and pelvis.
+ chain([0,2.73,0],[0,1.64,0],.40*sh,.37*hi,17);
+ for(const [y,r,z] of [[2.72,.37*sh,0],[2.56,.42*ch,0],[2.42,.39*ch,0],[2.24,.33*wa*fatExpand,0],[2.04,.32*wa*fatExpand,.025],[1.82,.36*hi,0],[1.66,.37*hi,-.015]])add(0,y,z,r,1.5);
+ // The head and neck blend with the upper torso rather than being separate parts.
+ chain([0,2.78,0],[0,3.13,0],.15,.15,6);
+ add(0,3.21,0,.245,1.65);add(0,3.30,.025,.195,1.35);
+ // Paired anatomy. Every joint has an overlapping transition.
  for(const side of [-1,1]){
-  ellipsoid(side*.2*ch,2.55,.205*ch,.205*ch,.13,.072, 'peito',skin);
-  ellipsoid(side*.36*sh,2.69,.005,.17*sh,.15,.165,'ombros');
-  ellipsoid(side*.28*ch,2.51,-.22,.15,.28,.065,'costas');
-  ellipsoid(side*.12,2.73,-.17,.14,.105,.07,'trapezio');
-  tapered(side*.48*sh,2.64,0,side*.56*sh,2.20,.015,.145*ar,.12*ar,'biceps');
-  ellipsoid(side*.56*sh,2.41,.09,.11*ar,.2,.1*ar,'biceps');
-  ellipsoid(side*.56*sh,2.4,-.09,.105*ar,.19,.095*ar,'triceps');
-  tapered(side*.56*sh,2.20,.015,side*.6*sh,1.72,.08,.112*ar,.072*ar,'triceps');
-  ellipsoid(side*.205*hi,1.58,-.17,.23*hi,.2,.16,'gluteos');
-  tapered(side*.205*hi,1.52,0,side*.205*hi,.84,.03,.22*th,.13*th,'quadriceps');
-  ellipsoid(side*.205*hi,1.19,.13,.17*th,.29,.13*th,'quadriceps');
-  ellipsoid(side*.205*hi,1.19,-.135,.15*th,.28,.13*th,'posterior');
-  tapered(side*.205*hi,.84,.03,side*.205*hi,.14,.045,.12*ca,.075*ca,'panturrilhas');
-  ellipsoid(side*.205*hi,.58,-.055,.12*ca,.22,.12*ca,'panturrilhas');
-  ellipsoid(side*.205*hi,.105,.15,.12,.085,.245,null);
+  const shoulderX=side*.39*sh,upperX=side*.50*sh;
+  chain([side*.25*sh,2.72,0],[shoulderX,2.63,0],.24,.205*sh,6);
+  chain([shoulderX,2.63,0],[upperX,2.17,.01],.20*ar,.135*ar,11);
+  chain([upperX,2.17,.01],[side*.55*sh,1.67,.08],.135*ar,.095*ar,12);
+  add(side*.47*sh,2.41,.025,.16*ar,1.3);
+  // Thighs are attached to the pelvis through a broad hip transition.
+  const legX=side*.215*hi;
+  chain([legX,1.69,0],[legX,1.03,.025],.225*th,.155*th,16);
+  chain([legX,1.03,.025],[legX,.22,.045],.16*ca,.105*ca,16);
+  add(legX,.60,-.05,.145*ca,1.25);
+  chain([legX,.19,.045],[legX,.10,.20],.12,.13,4);
+  // Pectoral and gluteal volume is fused into the main mesh.
+  add(side*.19*ch,2.51,.10,.17*ch,1.2);
+  add(side*.20*hi,1.65,-.10,.19*hi,1.25);
  }
- // Subtle abdominal definition appears at lower fat and greater muscular definition.
- if(fat<30&&mus>.35)for(const side of [-1,1])for(let j=0;j<3;j++){
-  const mesh=ellipsoid(side*.11,2.34-j*.145,.22*wa,.085,.064,.018,'abdomen',accent);mesh.material=accent;
+ if(f>25){
+  const extra=(f-25)/25;
+  add(0,2.03,.10,.26*wa*(1+extra*.75),1.25);
+  if(f>37)add(0,1.85,.13,.24*wa*(1+extra*.65),1.1);
  }
- // Fat-dependent lower abdominal apron and fold shadows; approximation, not diagnosis.
- if(fat>25){
-  const volume=clamp((fat-25)/25,0,1);
-  ellipsoid(0,1.97,.19*wa+volume*.045,.3*wa*fatScale,.13+volume*.12,.095+volume*.14,'abdomen');
-  for(let j=0;j<(fat>38?2:1);j++){
-   const points=[];for(let i=0;i<=32;i++){const x=(i/32-.5)*.53*wa*fatScale;points.push(new THREE.Vector3(x,1.88-j*.11+Math.cos(x*5)*.015,.29*wa+volume*.12))}
-   const curve=new THREE.CatmullRomCurve3(points);add(new THREE.TubeGeometry(curve,36,.005+volume*.004,5,false),foldMat,'abdomen');
-  }
+ effect.update();
+ effect.position.y=1.8;effect.scale.setScalar(2.25*bodyHeight);
+ effect.castShadow=true;effect.receiveShadow=true;effect.userData.muscle='abdomen';group.add(effect);
+ // Delicate non-structural skin details: no extra overlapping body meshes.
+ const veinMaterial=new THREE.MeshStandardMaterial({color:0x8c7771,roughness:.9,transparent:true,opacity:.22});
+ const details=[];
+ if(veins&&f<18&&mus>.65)for(const side of [-1,1]){
+  const curve=new THREE.CatmullRomCurve3([
+   new THREE.Vector3(side*.49*sh,2.46,.155),
+   new THREE.Vector3(side*.51*sh,2.32,.145),
+   new THREE.Vector3(side*.53*sh,2.20,.12)
+  ]);
+  const line=new THREE.Mesh(new THREE.TubeGeometry(curve,16,.002,4,false),veinMaterial);group.add(line);details.push(line);
  }
- // Vascular detail only when low body-fat and user explicitly enables it.
- if(veins&&fat<19&&mus>.55){
-  for(const side of [-1,1]){
-   for(let k=0;k<2;k++){
-    const p=[new THREE.Vector3(side*(.52*sh+k*.014),2.48,.12),new THREE.Vector3(side*(.57*sh+k*.01),2.29,.135),new THREE.Vector3(side*(.58*sh+k*.01),2.12,.11)];
-    add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p),18,.0025,5,false),veinMat,'biceps');
-   }
-  }
- }
- group.scale.setScalar(bodyHeight);return {group,dispose(){group.traverse(o=>{if(o.geometry)o.geometry.dispose()});materials.forEach(x=>x.dispose());texture.dispose()}};
+ return {group,dispose(){effect.geometry.dispose();texture.dispose();skin.dispose();veinMaterial.dispose();details.forEach(d=>d.geometry.dispose())}};
 }
 export default function RealisticBody3D({measurements,sex='male',fat=22,definition=55,veins=false,compact=false,angle=0,onAngleChange,onChooseExercise}){
  const host=useRef(null),sceneRef=useRef(null),[selected,setSelected]=useState('ombros'),[error,setError]=useState('');
@@ -97,7 +107,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
   function pointerDown(e){down={x:e.clientX,y:e.clientY}}
-  function pointerUp(e){if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>9)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-rect.left)/rect.width)*2-1;pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;ray.setFromCamera(pointer,camera);const hits=ray.intersectObjects(figure.group.children,true);const muscle=hits.find(h=>h.object.userData.muscle)?.object.userData.muscle;if(muscle)setSelected(muscle)}
+  function pointerUp(e){if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>9)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-rect.left)/rect.width)*2-1;pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;ray.setFromCamera(pointer,camera);const hits=ray.intersectObjects(figure.group.children,true);const hit=hits[0];if(hit){const p=hit.point.clone();const y=p.y;const x=Math.abs(p.x);const z=p.z;let muscle='abdomen';if(y>2.58&&x>.31)muscle='ombros';else if(y>2.45&&z<-.06)muscle='costas';else if(y>2.35&&z>.06)muscle='peito';else if(y>2.6)muscle='trapezio';else if(y>2.05&&x>.43)muscle=z>0?'biceps':'triceps';else if(y>1.5&&z<-.1)muscle='gluteos';else if(y>1.5)muscle='abdomen';else if(y>.85)muscle=z<0?'posterior':'quadriceps';else muscle='panturrilhas';setSelected(muscle)}}
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
   let active=true,id;function render(){if(!active)return;controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}render();
