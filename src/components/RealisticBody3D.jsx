@@ -37,7 +37,7 @@ function createFigure(m,sex,fat,definition,veins,compact=false){
  const ca=clamp(val(m?.calf,36)/36,.65,1.5);
  const bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatExpand=1+Math.max(0,f-19)*.011,definitionFactor=1+mus*.07;
- const effect=new MarchingCubes(compact?28:36,skin,false,false,40000);
+ const effect=new MarchingCubes(compact?24:32,skin,false,false,40000);
  effect.enableUvs=true;effect.enableColors=false;effect.isolation=80;effect.reset();
  // addBall uses normalized [0..1] coordinates; mesh uses [-1..1] positions.
  // Several smaller, overlapping influences create smooth, continuous anatomical transitions.
@@ -103,14 +103,14 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   scene.add(new THREE.HemisphereLight(0xffffff,0x564a49,2.5));
   const key=new THREE.DirectionalLight(0xffe6d2,3);key.position.set(2,5,5);scene.add(key);
   const rim=new THREE.DirectionalLight(0xc6d8ff,1.5);rim.position.set(-3,3,-4);scene.add(rim);
-  const figure=createFigure(measurements,sex,fat,definition,veins,compact);scene.add(figure.group);
+  let figure;try{figure=createFigure(measurements,sex,fat,definition,veins,compact);scene.add(figure.group)}catch(err){console.error('Falha no avatar 3D:',err);setError('Não foi possível gerar o avatar 3D: '+(err?.message||'erro desconhecido'));renderer.dispose();renderer.domElement.remove();return}
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
   function pointerDown(e){down={x:e.clientX,y:e.clientY}}
   function pointerUp(e){if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>9)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-rect.left)/rect.width)*2-1;pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;ray.setFromCamera(pointer,camera);const hits=ray.intersectObjects(figure.group.children,true);const hit=hits[0];if(hit){const p=hit.point.clone();const y=p.y;const x=Math.abs(p.x);const z=p.z;let muscle='abdomen';if(y>2.58&&x>.31)muscle='ombros';else if(y>2.45&&z<-.06)muscle='costas';else if(y>2.35&&z>.06)muscle='peito';else if(y>2.6)muscle='trapezio';else if(y>2.05&&x>.43)muscle=z>0?'biceps':'triceps';else if(y>1.5&&z<-.1)muscle='gluteos';else if(y>1.5)muscle='abdomen';else if(y>.85)muscle=z<0?'posterior':'quadriceps';else muscle='panturrilhas';setSelected(muscle)}}
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
-  let active=true,id;function render(){if(!active)return;controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}render();
+  let active=true,id;function render(){if(!active)return;try{controls.update();renderer.render(scene,camera)}catch(err){console.error('Falha ao desenhar avatar:',err);setError('Erro ao desenhar o avatar 3D: '+(err?.message||'erro desconhecido'));active=false;return}id=requestAnimationFrame(render)}render();
   sceneRef.current={figure,controls,camera};return()=>{active=false;cancelAnimationFrame(id);resize.disconnect();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);controls.dispose();figure.dispose();renderer.dispose();renderer.domElement.remove();sceneRef.current=null};
  },[measurements,sex,fat,definition,veins,compact]);
  useEffect(()=>{if(!sceneRef.current)return;const theta=angle*Math.PI/180,dist=7.9;sceneRef.current.camera.position.set(Math.sin(theta)*dist,2.1,Math.cos(theta)*dist);sceneRef.current.controls.update()},[angle]);
