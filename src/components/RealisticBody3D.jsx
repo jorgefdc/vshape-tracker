@@ -22,7 +22,7 @@ function skinTexture(){
  for(let i=0;i<im.data.length;i+=4){const n=(Math.random()-.5)*18;im.data[i]=216+n;im.data[i+1]=159+n;im.data[i+2]=131+n;im.data[i+3]=255}
  ctx.putImageData(im,0,0);const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,5);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
-function createFigure(m,sex,fat,definition,veins){
+function createFigure(m,sex,fat,definition,veins,compact=false){
  // Implicit surface: all limbs and torso blend into ONE continuous skin mesh.
  // No overlapping spheres/cylinders or visible seams at the joints.
  const group=new THREE.Group(),texture=skinTexture(),isFemale=sex==='female';
@@ -37,7 +37,7 @@ function createFigure(m,sex,fat,definition,veins){
  const ca=clamp(val(m?.calf,36)/36,.65,1.5);
  const bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatExpand=1+Math.max(0,f-19)*.011,definitionFactor=1+mus*.07;
- const effect=new MarchingCubes(72,skin,false,false,200000);
+ const effect=new MarchingCubes(compact?28:36,skin,false,false,40000);
  effect.enableUvs=true;effect.enableColors=false;effect.isolation=80;effect.reset();
  // addBall uses normalized [0..1] coordinates; mesh uses [-1..1] positions.
  // Several smaller, overlapping influences create smooth, continuous anatomical transitions.
@@ -98,12 +98,12 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
  useEffect(()=>{
   const node=host.current;if(!node)return;let renderer;
   try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'})}catch{setError('Este aparelho ou navegador não oferece WebGL.');return}
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;node.appendChild(renderer.domElement);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;node.appendChild(renderer.domElement);
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(34,node.clientWidth/(compact?300:440),.1,100);camera.position.set(0,2.1,7.9);
   scene.add(new THREE.HemisphereLight(0xffffff,0x564a49,2.5));
   const key=new THREE.DirectionalLight(0xffe6d2,3);key.position.set(2,5,5);scene.add(key);
   const rim=new THREE.DirectionalLight(0xc6d8ff,1.5);rim.position.set(-3,3,-4);scene.add(rim);
-  const figure=createFigure(measurements,sex,fat,definition,veins);scene.add(figure.group);
+  const figure=createFigure(measurements,sex,fat,definition,veins,compact);scene.add(figure.group);
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
   function pointerDown(e){down={x:e.clientX,y:e.clientY}}
