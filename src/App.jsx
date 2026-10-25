@@ -5,7 +5,7 @@ import {weeklySummary,monthlySummary,exerciseProgress,exportRows,formatCSV} from
 import {WeekStrip} from './components/WeekStrip.jsx';
 import BodyMeasurements from './components/BodyMeasurements.jsx';
 const KEY='vshape_tracker_v1',iso=()=>new Date().toISOString(),date=x=>new Date(x).toLocaleDateString('pt-BR');
-function read(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?{sessions:d.sessions||{},history:d.history||[],photos:d.photos||[],customRoutines:d.customRoutines||{},measurements:d.measurements||[],bodyGoal:d.bodyGoal||null}: {sessions:{},history:[],photos:[],customRoutines:{},measurements:[],bodyGoal:null,bodyGoal:null}}catch{return {sessions:{},history:[],photos:[],customRoutines:{},measurements:[]}}}
+function read(){try{const d=JSON.parse(localStorage.getItem(KEY));return d&&typeof d==='object'?{sessions:d.sessions||{},history:d.history||[],photos:d.photos||[],customRoutines:d.customRoutines||{},measurements:d.measurements||[],bodyGoal:d.bodyGoal||null}: {sessions:{},history:[],photos:[],customRoutines:{},measurements:[],bodyGoal:null}}catch{return {sessions:{},history:[],photos:[],customRoutines:{},measurements:[],bodyGoal:null}}}
 function allSets(h){return Object.entries(h.sets||{}).filter(([,v])=>v.done).map(([key,v])=>({key,exercise:h.exerciseNames?.[Number(key.split('-')[0])]||routines[h.day]?.ex[Number(key.split('-')[0])]?.[0]||key,kg:Number(v.kg)||0,reps:Number(v.reps)||0,restMeasured:v.restMeasured??null}))}
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 export default function App(){
