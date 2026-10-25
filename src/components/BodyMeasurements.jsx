@@ -29,7 +29,8 @@ function BodyAvatar({m}) {
  <g fontSize="10" fill="#f4d66e"><text x="6" y="132">Peito</text><text x="6" y="190">Cintura</text></g></svg>;
 }
 export default function BodyMeasurements({records=[],onSave,onDelete,onChooseExercise,goal,onSaveGoal,onBuildWorkout,sex='male',onSexChange,appearance,onAppearanceChange}){
- const [viewMode,setViewMode]=useState('realistic');
+ const [viewMode,setViewMode]=useState('muscles');
+ const [showGoal,setShowGoal]=useState(false);
  const [draft,setDraft]=useState(empty),[when,setWhen]=useState(new Date().toISOString().slice(0,10)),[selected,setSelected]=useState('latest');
  const sorted=[...records].sort((a,b)=>new Date(b.date)-new Date(a.date)),current=selected==='latest'?sorted[0]:sorted.find(x=>x.id===selected)||sorted[0],previous=sorted.find(x=>x.id!==current?.id);
  const ratio=number(current?.shoulders)&&number(current?.waist)?number(current.shoulders)/number(current.waist):null;
