@@ -44,7 +44,7 @@ function createFigure(m,sex,fat,definition,veins){
  const add=(x,y,z,r,weight=1)=>{
    const nx=(x+2.25)/4.5,ny=(y+.45)/4.5,nz=(z+2.25)/4.5;
    const radius=r/4.5;
-   effect.addBall(nx,ny,nz,Math.max(.02,12*radius*radius*weight),12);
+   effect.addBall(nx,ny,nz,Math.max(.02,92*radius*radius*weight),12);
  };
  const chain=(a,b,r1,r2,count=6)=>{
    for(let i=0;i<=count;i++){const t=i/count;add(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t,r1+(r2-r1)*t,1.3)}
