@@ -118,7 +118,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
   }
  }
  // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
- const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale],[1.92,.33*wa*fatScale,.23*wa*fatScale],[1.73,.38*hi,.255*hi],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
+ const belly=clamp((fat-19)/24,0,1.3);
+ const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale+belly*.016],[1.99,.32*wa*fatScale,.225*wa*fatScale+belly*.042],[1.88,.34*wa*fatScale,.235*wa*fatScale+belly*.045],[1.73,.38*hi,.255*hi+belly*.018],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
  const verts=[],indices=[],segments=64;
  const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
@@ -132,10 +133,10 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
-  ellipsoid(side*.2*ch,2.55,.192*ch,.17*ch,.087,.025, 'peito',skin);
+  ellipsoid(side*.2*ch,2.55,.218*ch,.17*ch,.078,.012, 'peito',skin);
   armSurface(side);
-  ellipsoid(side*.28*ch,2.51,-.199,.13,.23,.019,'costas');
-  ellipsoid(side*.12,2.73,-.145,.125,.09,.033,'trapezio');
+
+
 
 
 
@@ -145,17 +146,9 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  }
  // Subtle abdominal definition appears at lower fat and greater muscular definition.
  if(fat<30&&mus>.35)for(const side of [-1,1])for(let j=0;j<3;j++){
-  const mesh=ellipsoid(side*.11,2.34-j*.145,.207*wa,.075,.047,.005,'abdomen',accent);mesh.material=accent;
+  // Abdominal definition is indicated by lighting rather than raised disconnected plates.
  }
- // Fat-dependent lower abdominal apron and fold shadows; approximation, not diagnosis.
- if(fat>25){
-  const volume=clamp((fat-25)/25,0,1);
-  ellipsoid(0,1.97,.19*wa+volume*.045,.3*wa*fatScale,.13+volume*.12,.095+volume*.14,'abdomen');
-  for(let j=0;j<(fat>38?2:1);j++){
-   const points=[];for(let i=0;i<=32;i++){const x=(i/32-.5)*.53*wa*fatScale;points.push(new THREE.Vector3(x,1.88-j*.11+Math.cos(x*5)*.015,.29*wa+volume*.12))}
-   const curve=new THREE.CatmullRomCurve3(points);add(new THREE.TubeGeometry(curve,36,.005+volume*.004,5,false),foldMat,'abdomen');
-  }
- }
+ // Abdominal volume is integrated into the continuous torso rings, avoiding detached belly meshes.
  // Vascular detail only when low body-fat and user explicitly enables it.
  if(veins&&fat<19&&mus>.55){
   for(const side of [-1,1]){
