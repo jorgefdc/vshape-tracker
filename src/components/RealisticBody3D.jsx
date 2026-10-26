@@ -21,7 +21,7 @@ function skinTexture(enhanced=false){
  for(let i=0;i<im.data.length;i+=4){const n=(Math.random()-.5)*(enhanced?11:18),freckle=enhanced&&Math.random()<.0015?-22:0;im.data[i]=216+n+freckle;im.data[i+1]=159+n+freckle;im.data[i+2]=131+n+freckle;im.data[i+3]=255}
  ctx.putImageData(im,0,0);const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,5);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
-function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
+function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const group=new THREE.Group(),materials=[],texture=skinTexture(skinOverlay),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:skinOverlay?.87:.82,metalness:0,clearcoat:skinOverlay?.01:.015,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.27,depthWrite:false}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
  // Procedural visual skin layer: follows each mesh in 360 degrees without a flat image.
  // This is a stylized material, not the photorealistic mesh from the concept illustration.
@@ -52,7 +52,12 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
   };
   skin.customProgramCacheKey=()=> 'vshape-skin-v2';
  }
- materials.push(skin,accent,foldMat,veinMat);
+ const tones={claro:'#f2c9a8',medio:'#c68d64',moreno:'#95613e',escuro:'#593b2e'};
+ skin.color.set(tones[style.skinTone]||tones.medio);
+ if(skinOverlay)skin.map=null;
+ const shirtMat=new THREE.MeshStandardMaterial({color:style.shirtColor||'#2563eb',roughness:.94,side:THREE.DoubleSide});
+ const shortsMat=new THREE.MeshStandardMaterial({color:style.shortsColor||'#222c3e',roughness:.91,side:THREE.DoubleSide});
+ materials.push(skin,accent,foldMat,veinMat,shirtMat,shortsMat);
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatScale=1+(f-.8)*.15;
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
@@ -144,6 +149,12 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
   geometry.setIndex(faces);geometry.computeVertexNormals();
   add(geometry,skin,'quadriceps');
+  if(style.clothing==='casual'){
+   const verts2=[],faces2=[];
+   for(const [y,rx,rz,z] of smooth)for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts2.push(x+Math.cos(a)*rx*1.055,y,z+Math.sin(a)*rz*1.055)}
+   for(let i=0;i<smooth.length-1;i++)if(smooth[i][0]<=1.77&&smooth[i+1][0]>=1.03)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;faces2.push(a,b,c,b,d,c)}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts2,3));g.setIndex(faces2);g.computeVertexNormals();add(g,shortsMat);
+  }
   // Invisible hit regions keep posterior and calf selection available.
   const hitMaterial=new THREE.MeshBasicMaterial({visible:false});
   materials.push(hitMaterial);
@@ -160,6 +171,12 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
  for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
+ if(style.clothing==='casual'){
+  const shirtVerts=[],shirtFaces=[];
+  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;shirtVerts.push(Math.sin(a)*rx*1.048,y,Math.cos(a)*rz*1.048)}});
+  for(let i=0;i<smoothRings.length-1;i++)if(smoothRings[i][0]<=2.74&&smoothRings[i+1][0]>=1.91)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;shirtFaces.push(a,c,b,b,c,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(shirtVerts,3));g.setIndex(shirtFaces);g.computeVertexNormals();add(g,shirtMat);
+ }
  ellipsoid(0,3.18,0,.19,.255,.19,null);tapered(0,2.75,0,0,2.98,0,.135,.105,null);
  // Face features: ears, nose, brow, subtle eyes, hair cap.
  for(const side of [-1,1])ellipsoid(side*.19,3.17,0,.043,.082,.045,null);
@@ -201,7 +218,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  }
  group.scale.setScalar(bodyHeight);return {group,dispose(){group.traverse(o=>{if(o.geometry)o.geometry.dispose()});materials.forEach(x=>x.dispose());texture.dispose()}};
 }
-export default function RealisticBody3D({measurements,sex='male',fat=22,definition=55,veins=false,compact=false,angle=0,onAngleChange,onChooseExercise,skinOverlay=false}){
+export default function RealisticBody3D({measurements,sex='male',fat=22,definition=55,veins=false,compact=false,angle=0,onAngleChange,onChooseExercise,skinOverlay=false,style={}}){
  const host=useRef(null),sceneRef=useRef(null),[selected,setSelected]=useState('ombros'),[error,setError]=useState('');
  useEffect(()=>{
   const node=host.current;if(!node)return;let renderer;
@@ -211,7 +228,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   scene.add(new THREE.HemisphereLight(0xffffff,0x9c8b81,skinOverlay?2.25:2.65));
   const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?1.25:1.45);key.position.set(2,5,5);scene.add(key);
   const rim=new THREE.DirectionalLight(0xffe6d8,skinOverlay?.75:.9);rim.position.set(-3,3,-4);scene.add(rim);
-  const figure=createFigure(measurements,sex,fat,definition,veins,skinOverlay);scene.add(figure.group);
+  const figure=createFigure(measurements,sex,fat,definition,veins,skinOverlay,style);scene.add(figure.group);
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
   function pointerDown(e){down={x:e.clientX,y:e.clientY}}
@@ -220,7 +237,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
   let active=true,id;function render(){if(!active)return;controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}render();
   sceneRef.current={figure,controls,camera};return()=>{active=false;cancelAnimationFrame(id);resize.disconnect();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);controls.dispose();figure.dispose();renderer.dispose();renderer.domElement.remove();sceneRef.current=null};
- },[measurements,sex,fat,definition,veins,compact,skinOverlay]);
+ },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor]);
  useEffect(()=>{if(!sceneRef.current)return;const theta=angle*Math.PI/180,dist=7.9;sceneRef.current.camera.position.set(Math.sin(theta)*dist,2.1,Math.cos(theta)*dist);sceneRef.current.controls.update()},[angle]);
  return <div className="real-body"><div ref={host} className="real-body-canvas"/>{error&&<p>{error}</p>}{!compact&&<><div className="avatar-turn"><button className="outline" onClick={()=>onAngleChange?.((angle+315)%360)}>↶ 45°</button><span>Gire o corpo com o dedo</span><button className="outline" onClick={()=>onAngleChange?.((angle+45)%360)}>45° ↷</button></div><p className="hint">Avatar 3D ilustrativo. Definição, veias e dobras são estimativas visuais, não reconstrução médica.</p><div className="muscle-chips">{Object.keys(EX).map(key=><button key={key} className={selected===key?'active':''} onClick={()=>setSelected(key)}>{NAMES[key]}</button>)}</div><h2>{NAMES[selected]} — exercícios</h2>{EX[selected].map(name=><div className="line" key={name}><span>{name}</span>{onChooseExercise&&<button className="outline" onClick={()=>onChooseExercise(name,selected)}>Adicionar</button>}</div>)}</>}</div>;
 }
