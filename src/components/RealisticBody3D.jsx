@@ -165,7 +165,11 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
-  // Chest volume is already integrated in the torso loft: avoid floating pectoral seams.
+  // Soft junction volumes: embedded beneath the torso/limb surface to fill abrupt gaps.
+  // Keep these small and mostly intersecting so they round silhouettes without creating visible balls.
+  ellipsoid(side*.405*sh,2.695,0,.155*sh,.105,.185*ch,'ombros');
+  ellipsoid(side*.455*sh,2.57,-.015,.125*sh,.145,.14*ch,'ombros');
+  ellipsoid(side*.285*hi,1.565,0,.18*hi,.16,.205*hi,'gluteos');
   armSurface(side);
 
 
