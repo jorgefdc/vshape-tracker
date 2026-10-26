@@ -165,11 +165,15 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
-  // Soft junction volumes: embedded beneath the torso/limb surface to fill abrupt gaps.
+  // Anatomical transition layer: embedded blended volumes reduce hard silhouette gaps.
+ // The surface remains parametric so measurements still drive body proportions.
+ // Soft junction volumes: embedded beneath the torso/limb surface to fill abrupt gaps.
   // Keep these small and mostly intersecting so they round silhouettes without creating visible balls.
   ellipsoid(side*.405*sh,2.695,0,.155*sh,.105,.185*ch,'ombros');
+  ellipsoid(side*.405*sh,2.61,-.012,.125*sh,.19,.145*ch,'ombros');
   ellipsoid(side*.455*sh,2.57,-.015,.125*sh,.145,.14*ch,'ombros');
   ellipsoid(side*.285*hi,1.565,0,.18*hi,.16,.205*hi,'gluteos');
+  ellipsoid(side*.235*hi,1.49,-.018,.165*hi,.21,.185*hi,'gluteos');
   armSurface(side);
 
 
