@@ -72,7 +72,10 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
    [2.01,.59*sh,.045,.106*ar,.10*ar],
    [1.88,.599*sh,.06,.091*ar,.088*ar],
    [1.76,.605*sh,.077,.071*ar,.07*ar],
-   [1.70,.605*sh,.081,.061*ar,.061*ar]
+   [1.70,.605*sh,.081,.061*ar,.061*ar],
+   [1.63,.607*sh,.087,.065*ar,.047*ar],
+   [1.57,.607*sh,.094,.058*ar,.034*ar],
+   [1.53,.606*sh,.096,.035*ar,.022*ar]
   ];
   const smooth=[],segments=48;
   for(let k=0;k<levels.length-1;k++){
@@ -87,7 +90,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
-   if(side===1)faces.push(a,b,c,b,d,c);else faces.push(a,c,b,b,c,d);
+   faces.push(a,c,b,b,c,d);
   }
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
@@ -162,7 +165,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
-  ellipsoid(side*.2*ch,2.55,.218*ch,.17*ch,.078,.012, 'peito',skin);
+  // Chest volume is already integrated in the torso loft: avoid floating pectoral seams.
   armSurface(side);
 
 
@@ -171,7 +174,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
 
 
   legSurface(side);
-  ellipsoid(side*.205*hi,.105,.15,.12,.085,.245,null);
+  const foot=ellipsoid(side*.205*hi,.105,.15,.115,.075,.235,null);
+  foot.rotation.y=side*.055;
  }
  // Subtle abdominal definition appears at lower fat and greater muscular definition.
  if(fat<30&&mus>.35)for(const side of [-1,1])for(let j=0;j<3;j++){
