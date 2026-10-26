@@ -56,14 +56,14 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatScale=1+(f-.8)*.15;
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
- function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,40,30),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
+ function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,64,48),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
  function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),40,14),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
  // Continuous shoulder-to-hand surface: one anatomical volume instead of intersecting spheres and cylinders.
  function armSurface(side){
   const levels=[
-   [2.77,.405*sh,0,.095*ar,.102*ar],
-   [2.73,.455*sh,0,.14*ar,.15*ar],
-   [2.66,.495*sh,0,.157*ar,.16*ar],
+   [2.77,.385*sh,0,.11*ar,.11*ar],
+   [2.73,.435*sh,0,.155*ar,.155*ar],
+   [2.66,.49*sh,0,.169*ar,.168*ar],
    [2.57,.525*sh,.006,.148*ar,.144*ar],
    [2.46,.548*sh,.01,.126*ar,.122*ar],
    [2.32,.561*sh,.014,.119*ar,.113*ar],
@@ -77,7 +77,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
    [1.57,.607*sh,.094,.058*ar,.034*ar],
    [1.53,.606*sh,.096,.035*ar,.022*ar]
   ];
-  const smooth=[],segments=48;
+  const smooth=[],segments=80;
   for(let k=0;k<levels.length-1;k++){
    const a=levels[Math.max(0,k-1)],b=levels[k],c=levels[k+1],d=levels[Math.min(levels.length-1,k+2)];
    for(let j=0;j<4;j++){const t=j/4;const curve=h=>.5*((2*b[h])+(-a[h]+c[h])*t+(2*a[h]-5*b[h]+4*c[h]-d[h])*t*t+(-a[h]+3*b[h]-3*c[h]+d[h])*t*t*t);smooth.push([0,1,2,3,4].map(curve))}
@@ -90,7 +90,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
-   faces.push(a,c,b,b,c,d);
+   faces.push(a,b,c,b,d,c);
   }
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
@@ -108,8 +108,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  function legSurface(side){
   const x=side*.205*hi;
   const levels=[
-   [1.65,.185*th,.18*th,0],
-   [1.56,.22*th,.215*th,0],
+   [1.65,.20*th,.19*th,0],
+   [1.56,.23*th,.22*th,0],
    [1.43,.225*th,.205*th,.01],
    [1.28,.208*th,.19*th,.015],
    [1.12,.183*th,.167*th,.02],
@@ -123,7 +123,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
    [.18,.086*ca,.089*ca,.035],
    [.11,.08*ca,.085*ca,.04]
   ];
-  const smooth=[],segments=48;
+  const smooth=[],segments=80;
   for(let k=0;k<levels.length-1;k++){
    const a=levels[Math.max(0,k-1)],b=levels[k],c=levels[k+1],d=levels[Math.min(levels.length-1,k+2)];
    for(let j=0;j<5;j++){const t=j/5;const curve=h=>.5*((2*b[h])+(-a[h]+c[h])*t+(2*a[h]-5*b[h]+4*c[h]-d[h])*t*t+(-a[h]+3*b[h]-3*c[h]+d[h])*t*t*t);smooth.push([0,1,2,3].map(curve))}
@@ -135,7 +135,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
-   faces.push(a,c,b,b,c,d);
+   faces.push(a,b,c,b,d,c);
   }
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
@@ -152,7 +152,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
  const belly=clamp((fat-19)/24,0,1.3);
  const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale+belly*.016],[1.99,.32*wa*fatScale,.225*wa*fatScale+belly*.042],[1.88,.34*wa*fatScale,.235*wa*fatScale+belly*.045],[1.73,.38*hi,.255*hi+belly*.018],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
- const verts=[],indices=[],segments=64;
+ const verts=[],indices=[],segments=96;
  const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
  for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
@@ -169,11 +169,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  // The surface remains parametric so measurements still drive body proportions.
  // Soft junction volumes: embedded beneath the torso/limb surface to fill abrupt gaps.
   // Keep these small and mostly intersecting so they round silhouettes without creating visible balls.
-  ellipsoid(side*.405*sh,2.695,0,.155*sh,.105,.185*ch,'ombros');
-  ellipsoid(side*.405*sh,2.61,-.012,.125*sh,.19,.145*ch,'ombros');
-  ellipsoid(side*.455*sh,2.57,-.015,.125*sh,.145,.14*ch,'ombros');
-  ellipsoid(side*.285*hi,1.565,0,.18*hi,.16,.205*hi,'gluteos');
-  ellipsoid(side*.235*hi,1.49,-.018,.165*hi,.21,.185*hi,'gluteos');
+  // Avoid intersecting transition spheres: they create hard visible contour seams.
+  // The arm, torso and thigh lofts now provide the visible transition.
   armSurface(side);
 
 
@@ -206,7 +203,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
  useEffect(()=>{
   const node=host.current;if(!node)return;let renderer;
   try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'})}catch{setError('Este aparelho ou navegador não oferece WebGL.');return}
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=skinOverlay?1.18:1.28;node.appendChild(renderer.domElement);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=skinOverlay?1.18:1.28;node.appendChild(renderer.domElement);
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(34,node.clientWidth/(compact?300:440),.1,100);camera.position.set(0,2.1,7.9);
   scene.add(new THREE.HemisphereLight(0xffffff,0x9c8b81,skinOverlay?2.25:2.65));
   const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?1.25:1.45);key.position.set(2,5,5);scene.add(key);
