@@ -37,8 +37,8 @@ function createFigure(m,sex,fat,definition,veins,compact=false){
  const ca=clamp(val(m?.calf,36)/36,.65,1.5);
  const bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatExpand=1+Math.max(0,f-19)*.011,definitionFactor=1+mus*.07;
- const effect=new MarchingCubes(compact?24:32,skin,false,false,40000);
- effect.enableUvs=true;effect.enableColors=false;effect.isolation=80;effect.reset();
+ const effect=new MarchingCubes(compact?24:32,skin,true,false,40000);
+ // UV buffer must be allocated by the constructor; toggling enableUvs later crashes update().effect.isolation=80;effect.reset();
  // addBall uses normalized [0..1] coordinates; mesh uses [-1..1] positions.
  // Several smaller, overlapping influences create smooth, continuous anatomical transitions.
  const add=(x,y,z,r,weight=1)=>{
