@@ -22,11 +22,11 @@ function skinTexture(enhanced=false){
  ctx.putImageData(im,0,0);const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,5);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
- const group=new THREE.Group(),materials=[],texture=skinTexture(skinOverlay),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:skinOverlay?.81:.68,metalness:0,clearcoat:skinOverlay?.025:.06,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.68}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
+ const group=new THREE.Group(),materials=[],texture=skinTexture(skinOverlay),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:skinOverlay?.81:.68,metalness:0,clearcoat:skinOverlay?.025:.06,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.27,depthWrite:false}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
  materials.push(skin,accent,foldMat,veinMat);
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatScale=1+(f-.8)*.15;
- function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=true;mesh.receiveShadow=true;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
+ function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
  function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,40,30),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
  function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),40,14),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
  // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
@@ -44,25 +44,25 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
-  ellipsoid(side*.2*ch,2.55,.205*ch,.185*ch,.105,.047, 'peito',skin);
-  ellipsoid(side*.36*sh,2.69,.005,.155*sh,.135,.145,'ombros');
-  ellipsoid(side*.28*ch,2.51,-.22,.14,.255,.042,'costas');
-  ellipsoid(side*.12,2.73,-.17,.14,.105,.07,'trapezio');
+  ellipsoid(side*.2*ch,2.55,.185*ch,.18*ch,.093,.042, 'peito',skin);
+  ellipsoid(side*.36*sh,2.69,.005,.148*sh,.129,.133,'ombros');
+  ellipsoid(side*.28*ch,2.51,-.206,.137,.25,.031,'costas');
+  ellipsoid(side*.12,2.73,-.15,.132,.097,.05,'trapezio');
   tapered(side*.48*sh,2.64,0,side*.56*sh,2.20,.015,.145*ar,.12*ar,'biceps');
-  ellipsoid(side*.56*sh,2.41,.09,.093*ar,.18,.083*ar,'biceps');
-  ellipsoid(side*.56*sh,2.4,-.09,.091*ar,.18,.08*ar,'triceps');
+  ellipsoid(side*.56*sh,2.41,.075,.087*ar,.175,.075*ar,'biceps');
+  ellipsoid(side*.56*sh,2.4,-.073,.085*ar,.17,.073*ar,'triceps');
   tapered(side*.56*sh,2.20,.015,side*.6*sh,1.72,.08,.112*ar,.072*ar,'triceps');
-  ellipsoid(side*.205*hi,1.58,-.17,.23*hi,.2,.16,'gluteos');
+  ellipsoid(side*.205*hi,1.58,-.135,.21*hi,.18,.12,'gluteos');
   tapered(side*.205*hi,1.52,0,side*.205*hi,.84,.03,.22*th,.13*th,'quadriceps');
-  ellipsoid(side*.205*hi,1.19,.13,.145*th,.27,.095*th,'quadriceps');
-  ellipsoid(side*.205*hi,1.19,-.135,.135*th,.26,.095*th,'posterior');
+  ellipsoid(side*.205*hi,1.19,.095,.14*th,.265,.076*th,'quadriceps');
+  ellipsoid(side*.205*hi,1.19,-.1,.13*th,.255,.075*th,'posterior');
   tapered(side*.205*hi,.84,.03,side*.205*hi,.14,.045,.12*ca,.075*ca,'panturrilhas');
-  ellipsoid(side*.205*hi,.58,-.055,.103*ca,.2,.1*ca,'panturrilhas');
+  ellipsoid(side*.205*hi,.58,-.042,.099*ca,.2,.087*ca,'panturrilhas');
   ellipsoid(side*.205*hi,.105,.15,.12,.085,.245,null);
  }
  // Subtle abdominal definition appears at lower fat and greater muscular definition.
  if(fat<30&&mus>.35)for(const side of [-1,1])for(let j=0;j<3;j++){
-  const mesh=ellipsoid(side*.11,2.34-j*.145,.22*wa,.077,.052,.009,'abdomen',accent);mesh.material=accent;
+  const mesh=ellipsoid(side*.11,2.34-j*.145,.207*wa,.075,.047,.005,'abdomen',accent);mesh.material=accent;
  }
  // Fat-dependent lower abdominal apron and fold shadows; approximation, not diagnosis.
  if(fat>25){
