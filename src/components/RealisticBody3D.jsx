@@ -29,6 +29,49 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
  function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,40,30),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
  function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),40,14),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
+ // Continuous shoulder-to-hand surface: one anatomical volume instead of intersecting spheres and cylinders.
+ function armSurface(side){
+  const levels=[
+   [2.77,.405*sh,0,.095*ar,.102*ar],
+   [2.73,.455*sh,0,.14*ar,.15*ar],
+   [2.66,.495*sh,0,.157*ar,.16*ar],
+   [2.57,.525*sh,.006,.148*ar,.144*ar],
+   [2.46,.548*sh,.01,.126*ar,.122*ar],
+   [2.32,.561*sh,.014,.119*ar,.113*ar],
+   [2.20,.572*sh,.025,.101*ar,.10*ar],
+   [2.12,.581*sh,.033,.09*ar,.09*ar],
+   [2.01,.59*sh,.045,.106*ar,.10*ar],
+   [1.88,.599*sh,.06,.091*ar,.088*ar],
+   [1.76,.605*sh,.077,.071*ar,.07*ar],
+   [1.70,.605*sh,.081,.061*ar,.061*ar]
+  ];
+  const smooth=[],segments=48;
+  for(let k=0;k<levels.length-1;k++){
+   const a=levels[Math.max(0,k-1)],b=levels[k],c=levels[k+1],d=levels[Math.min(levels.length-1,k+2)];
+   for(let j=0;j<4;j++){const t=j/4;const curve=h=>.5*((2*b[h])+(-a[h]+c[h])*t+(2*a[h]-5*b[h]+4*c[h]-d[h])*t*t+(-a[h]+3*b[h]-3*c[h]+d[h])*t*t*t);smooth.push([0,1,2,3,4].map(curve))}
+  }
+  smooth.push(levels[levels.length-1]);
+  const points=[],faces=[];
+  for(const [y,x,z,rx,rz] of smooth)for(let j=0;j<segments;j++){
+   const theta=j/segments*Math.PI*2;
+   points.push(side*x+Math.cos(theta)*rx,y, z+Math.sin(theta)*rz);
+  }
+  for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
+   const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
+   if(side===1)faces.push(a,b,c,b,d,c);else faces.push(a,c,b,b,c,d);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
+  geometry.setIndex(faces);geometry.computeVertexNormals();
+  const mesh=add(geometry,skin,'biceps');
+  // Hit areas preserve muscle-specific interaction without adding visible seams.
+  const hitMaterial=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
+  materials.push(hitMaterial);
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),hitMaterial);
+  hit.position.set(side*.49*sh,2.66,0);hit.scale.set(.15*ar,.145,.15*ar);
+  hit.userData.muscle='ombros';group.add(hit);
+  return mesh;
+ }
  // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
  const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale],[1.92,.33*wa*fatScale,.23*wa*fatScale],[1.73,.38*hi,.255*hi],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
  const verts=[],indices=[],segments=64;
@@ -45,13 +88,13 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
   ellipsoid(side*.2*ch,2.55,.185*ch,.18*ch,.093,.042, 'peito',skin);
-  ellipsoid(side*.36*sh,2.69,.005,.148*sh,.129,.133,'ombros');
+  armSurface(side);
   ellipsoid(side*.28*ch,2.51,-.206,.137,.25,.031,'costas');
   ellipsoid(side*.12,2.73,-.15,.132,.097,.05,'trapezio');
-  tapered(side*.48*sh,2.64,0,side*.56*sh,2.20,.015,.145*ar,.12*ar,'biceps');
-  ellipsoid(side*.56*sh,2.41,.075,.087*ar,.175,.075*ar,'biceps');
-  ellipsoid(side*.56*sh,2.4,-.073,.085*ar,.17,.073*ar,'triceps');
-  tapered(side*.56*sh,2.20,.015,side*.6*sh,1.72,.08,.112*ar,.072*ar,'triceps');
+
+
+
+
   ellipsoid(side*.205*hi,1.58,-.135,.21*hi,.18,.12,'gluteos');
   tapered(side*.205*hi,1.52,0,side*.205*hi,.84,.03,.22*th,.13*th,'quadriceps');
   ellipsoid(side*.205*hi,1.19,.095,.14*th,.265,.076*th,'quadriceps');
