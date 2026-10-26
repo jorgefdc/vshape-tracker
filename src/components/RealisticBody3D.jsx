@@ -23,6 +23,35 @@ function skinTexture(enhanced=false){
 }
 function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  const group=new THREE.Group(),materials=[],texture=skinTexture(skinOverlay),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:skinOverlay?.81:.68,metalness:0,clearcoat:skinOverlay?.025:.06,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.27,depthWrite:false}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
+ // Procedural visual skin layer: follows each mesh in 360 degrees without a flat image.
+ // This is a stylized material, not the photorealistic mesh from the concept illustration.
+ if(skinOverlay){
+  skin.map=null;
+  skin.color.set(0xd8a486);
+  skin.roughness=.78;
+  skin.clearcoat=.035;
+  skin.onBeforeCompile=shader=>{
+   shader.vertexShader=shader.vertexShader.replace(
+    '#include <common>',
+    '#include <common>\nvarying vec3 vSkinLocal;'
+   ).replace(
+    '#include <begin_vertex>',
+    '#include <begin_vertex>\nvSkinLocal=position;'
+   );
+   shader.fragmentShader=shader.fragmentShader.replace(
+    '#include <common>',
+    '#include <common>\nvarying vec3 vSkinLocal;'
+   ).replace(
+    '#include <color_fragment>',
+    `#include <color_fragment>
+    float skinNoise=sin(vSkinLocal.x*91.0+sin(vSkinLocal.y*57.0))*sin(vSkinLocal.z*83.0-vSkinLocal.y*39.0);
+    float skinTone=0.986+0.014*skinNoise;
+    diffuseColor.rgb*=skinTone;
+    `
+   );
+  };
+  skin.customProgramCacheKey=()=> 'vshape-skin-v2';
+ }
  materials.push(skin,accent,foldMat,veinMat);
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatScale=1+(f-.8)*.15;
@@ -167,9 +196,9 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'})}catch{setError('Este aparelho ou navegador não oferece WebGL.');return}
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=skinOverlay?1.18:1.4;node.appendChild(renderer.domElement);
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(34,node.clientWidth/(compact?300:440),.1,100);camera.position.set(0,2.1,7.9);
-  scene.add(new THREE.HemisphereLight(0xffffff,skinOverlay?0x65534e:0x564a49,skinOverlay?1.9:2.5));
-  const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?2.5:3);key.position.set(2,5,5);scene.add(key);
-  const rim=new THREE.DirectionalLight(0xc6d8ff,skinOverlay?1.1:1.5);rim.position.set(-3,3,-4);scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xffffff,skinOverlay?0x55473f:0x564a49,skinOverlay?1.55:2.5));
+  const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?2.2:3);key.position.set(2,5,5);scene.add(key);
+  const rim=new THREE.DirectionalLight(0xc6d8ff,skinOverlay?.85:1.5);rim.position.set(-3,3,-4);scene.add(rim);
   const figure=createFigure(measurements,sex,fat,definition,veins,skinOverlay);scene.add(figure.group);
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
