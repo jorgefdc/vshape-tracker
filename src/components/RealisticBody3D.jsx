@@ -22,7 +22,7 @@ function skinTexture(enhanced=false){
  ctx.putImageData(im,0,0);const t=new THREE.CanvasTexture(canvas);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,5);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
- const group=new THREE.Group(),materials=[],texture=skinTexture(skinOverlay),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:skinOverlay?.81:.68,metalness:0,clearcoat:skinOverlay?.025:.06,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.27,depthWrite:false}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
+ const group=new THREE.Group(),materials=[],texture=skinTexture(skinOverlay),skin=new THREE.MeshPhysicalMaterial({map:texture,roughness:skinOverlay?.87:.82,metalness:0,clearcoat:skinOverlay?.01:.015,clearcoatRoughness:.85}),accent=new THREE.MeshPhysicalMaterial({color:0xe2a98f,roughness:.72,transparent:true,opacity:.27,depthWrite:false}),foldMat=new THREE.MeshStandardMaterial({color:0x9e6455,roughness:1,transparent:true,opacity:.32}),veinMat=new THREE.MeshStandardMaterial({color:0x567c81,roughness:.75,transparent:true,opacity:.52}),isFemale=sex==='female';
  // Procedural visual skin layer: follows each mesh in 360 degrees without a flat image.
  // This is a stylized material, not the photorealistic mesh from the concept illustration.
  if(skinOverlay){
@@ -202,11 +202,11 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
  useEffect(()=>{
   const node=host.current;if(!node)return;let renderer;
   try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'})}catch{setError('Este aparelho ou navegador não oferece WebGL.');return}
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=skinOverlay?1.18:1.4;node.appendChild(renderer.domElement);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(node.clientWidth,compact?300:440);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=skinOverlay?1.18:1.28;node.appendChild(renderer.domElement);
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(34,node.clientWidth/(compact?300:440),.1,100);camera.position.set(0,2.1,7.9);
-  scene.add(new THREE.HemisphereLight(0xffffff,skinOverlay?0x55473f:0x564a49,skinOverlay?1.55:2.5));
-  const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?2.2:3);key.position.set(2,5,5);scene.add(key);
-  const rim=new THREE.DirectionalLight(0xc6d8ff,skinOverlay?.85:1.5);rim.position.set(-3,3,-4);scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x9c8b81,skinOverlay?2.25:2.65));
+  const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?1.25:1.45);key.position.set(2,5,5);scene.add(key);
+  const rim=new THREE.DirectionalLight(0xffe6d8,skinOverlay?.75:.9);rim.position.set(-3,3,-4);scene.add(rim);
   const figure=createFigure(measurements,sex,fat,definition,veins,skinOverlay);scene.add(figure.group);
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
