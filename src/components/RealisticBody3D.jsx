@@ -101,6 +101,12 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
   geometry.setIndex(faces);geometry.computeVertexNormals();
   const mesh=add(geometry,skin,'biceps');
+  if(style.clothing==='casual'){
+   const sleeveVertices=[],sleeveFaces=[];
+   for(const [y,x,z,rx,rz] of smooth)for(let j=0;j<segments;j++){const theta=j/segments*Math.PI*2;sleeveVertices.push(side*x+Math.cos(theta)*rx*1.09,y,z+Math.sin(theta)*rz*1.09)}
+   for(let i=0;i<smooth.length-1;i++)if(smooth[i][0]<=2.76&&smooth[i+1][0]>=2.47)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;sleeveFaces.push(a,b,c,b,d,c)}
+   const sleeveGeo=new THREE.BufferGeometry();sleeveGeo.setAttribute('position',new THREE.Float32BufferAttribute(sleeveVertices,3));sleeveGeo.setIndex(sleeveFaces);sleeveGeo.computeVertexNormals();add(sleeveGeo,shirtMat);
+  }
   // Hit areas preserve muscle-specific interaction without adding visible seams.
   const hitMaterial=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false});
   materials.push(hitMaterial);
@@ -150,10 +156,16 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   geometry.setIndex(faces);geometry.computeVertexNormals();
   add(geometry,skin,'quadriceps');
   if(style.clothing==='casual'){
-   const verts2=[],faces2=[];
-   for(const [y,rx,rz,z] of smooth)for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts2.push(x+Math.cos(a)*rx*1.055,y,z+Math.sin(a)*rz*1.055)}
-   for(let i=0;i<smooth.length-1;i++)if(smooth[i][0]<=1.77&&smooth[i+1][0]>=1.03)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;faces2.push(a,b,c,b,d,c)}
-   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts2,3));g.setIndex(faces2);g.computeVertexNormals();add(g,shortsMat);
+   const shortVertices=[],shortFaces=[];
+   const hem=1.02,waist=1.78;
+   const shortRings=smooth.filter(([y])=>y<=waist&&y>=hem);
+   // Build a loose fabric tube from hip to mid-thigh, not skin-tight anatomical paint.
+   for(const [y,rx,rz,z] of shortRings){
+    const ease=.045+Math.max(0,(1.5-y))*.035;
+    for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;shortVertices.push(x+Math.cos(a)*(rx+ease),y,z+Math.sin(a)*(rz+ease))}
+   }
+   for(let i=0;i<shortRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;shortFaces.push(a,b,c,b,d,c)}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(shortVertices,3));g.setIndex(shortFaces);g.computeVertexNormals();add(g,shortsMat);
   }
   // Invisible hit regions keep posterior and calf selection available.
   const hitMaterial=new THREE.MeshBasicMaterial({visible:false});
@@ -172,9 +184,16 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
  if(style.clothing==='casual'){
+  // Independent fabric silhouette: smooth waist and hem, with room for chest and abdomen.
+  const shirtRings=[];
+  for(const [y,rx,rz] of smoothRings){
+   if(y>2.74||y<1.57)continue;
+   const extra=.055+(y<2.12?.035:0);
+   shirtRings.push([y,rx+extra,rz+extra]);
+  }
   const shirtVerts=[],shirtFaces=[];
-  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;shirtVerts.push(Math.sin(a)*rx*1.048,y,Math.cos(a)*rz*1.048)}});
-  for(let i=0;i<smoothRings.length-1;i++)if(smoothRings[i][0]<=2.74&&smoothRings[i+1][0]>=1.91)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;shirtFaces.push(a,c,b,b,c,d)}
+  for(const [y,rx,rz] of shirtRings)for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;shirtVerts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}
+  for(let i=0;i<shirtRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;shirtFaces.push(a,c,b,b,c,d)}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(shirtVerts,3));g.setIndex(shirtFaces);g.computeVertexNormals();add(g,shirtMat);
  }
  ellipsoid(0,3.18,0,.19,.255,.19,null);tapered(0,2.75,0,0,2.98,0,.135,.105,null);
