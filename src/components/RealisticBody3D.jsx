@@ -107,9 +107,12 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  // Continuous hip-to-ankle mesh with gradually varying thigh, knee and calf volume.
  function legSurface(side){
   const x=side*.205*hi;
+  // Extend upper thigh inside pelvis to hide the former flat joint seam.
   const levels=[
-   [1.65,.20*th,.19*th,0],
-   [1.56,.23*th,.22*th,0],
+   [1.80,.155*th,.155*th,-.005],
+   [1.74,.192*th,.185*th,-.005],
+   [1.65,.225*th,.212*th,0],
+   [1.56,.235*th,.22*th,0],
    [1.43,.225*th,.205*th,.01],
    [1.28,.208*th,.19*th,.015],
    [1.12,.183*th,.167*th,.02],
@@ -151,7 +154,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  }
  // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
  const belly=clamp((fat-19)/24,0,1.3);
- const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale+belly*.016],[1.99,.32*wa*fatScale,.225*wa*fatScale+belly*.042],[1.88,.34*wa*fatScale,.235*wa*fatScale+belly*.045],[1.73,.38*hi,.255*hi+belly*.018],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
+ const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale+belly*.016],[1.99,.32*wa*fatScale,.225*wa*fatScale+belly*.042],[1.88,.34*wa*fatScale,.235*wa*fatScale+belly*.045],[1.73,.38*hi,.255*hi+belly*.018],[1.62,.375*hi,.25*hi],[1.54,.34*hi,.225*hi],[1.48,.29*hi,.195*hi],[1.43,.24*hi,.16*hi]];
  const verts=[],indices=[],segments=96;
  const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
