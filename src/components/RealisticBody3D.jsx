@@ -27,13 +27,14 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
  const fatScale=1+(f-.8)*.15;
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=true;mesh.receiveShadow=true;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
- function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,28,20),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
- function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),22,7),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
+ function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,40,30),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
+ function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),40,14),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
  // Smooth lofted torso with continuous shoulder, waist and pelvis contours.
  const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale],[1.92,.33*wa*fatScale,.23*wa*fatScale],[1.73,.38*hi,.255*hi],[1.58,.38*hi,.255*hi],[1.51,.31*hi,.23*hi]];
- const verts=[],indices=[],segments=48;
- rings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
- for(let i=0;i<rings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
+ const verts=[],indices=[],segments=64;
+ const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
+ smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
+ for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
  ellipsoid(0,3.18,0,.19,.255,.19,null);tapered(0,2.77,0,0,2.98,0,.11,.105,null);
  // Face features: ears, nose, brow, subtle eyes, hair cap.
@@ -43,25 +44,25 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false){
  for(const side of [-1,1])ellipsoid(side*.078,3.22,.174,.021,.011,.01,null,eyeMat);
  // Pectorals, shoulder deltoids, lats and muscle planes are attached to the continuous torso.
  for(const side of [-1,1]){
-  ellipsoid(side*.2*ch,2.55,.205*ch,.205*ch,.13,.072, 'peito',skin);
-  ellipsoid(side*.36*sh,2.69,.005,.17*sh,.15,.165,'ombros');
-  ellipsoid(side*.28*ch,2.51,-.22,.15,.28,.065,'costas');
+  ellipsoid(side*.2*ch,2.55,.205*ch,.185*ch,.105,.047, 'peito',skin);
+  ellipsoid(side*.36*sh,2.69,.005,.155*sh,.135,.145,'ombros');
+  ellipsoid(side*.28*ch,2.51,-.22,.14,.255,.042,'costas');
   ellipsoid(side*.12,2.73,-.17,.14,.105,.07,'trapezio');
   tapered(side*.48*sh,2.64,0,side*.56*sh,2.20,.015,.145*ar,.12*ar,'biceps');
-  ellipsoid(side*.56*sh,2.41,.09,.11*ar,.2,.1*ar,'biceps');
-  ellipsoid(side*.56*sh,2.4,-.09,.105*ar,.19,.095*ar,'triceps');
+  ellipsoid(side*.56*sh,2.41,.09,.093*ar,.18,.083*ar,'biceps');
+  ellipsoid(side*.56*sh,2.4,-.09,.091*ar,.18,.08*ar,'triceps');
   tapered(side*.56*sh,2.20,.015,side*.6*sh,1.72,.08,.112*ar,.072*ar,'triceps');
   ellipsoid(side*.205*hi,1.58,-.17,.23*hi,.2,.16,'gluteos');
   tapered(side*.205*hi,1.52,0,side*.205*hi,.84,.03,.22*th,.13*th,'quadriceps');
-  ellipsoid(side*.205*hi,1.19,.13,.17*th,.29,.13*th,'quadriceps');
-  ellipsoid(side*.205*hi,1.19,-.135,.15*th,.28,.13*th,'posterior');
+  ellipsoid(side*.205*hi,1.19,.13,.145*th,.27,.095*th,'quadriceps');
+  ellipsoid(side*.205*hi,1.19,-.135,.135*th,.26,.095*th,'posterior');
   tapered(side*.205*hi,.84,.03,side*.205*hi,.14,.045,.12*ca,.075*ca,'panturrilhas');
-  ellipsoid(side*.205*hi,.58,-.055,.12*ca,.22,.12*ca,'panturrilhas');
+  ellipsoid(side*.205*hi,.58,-.055,.103*ca,.2,.1*ca,'panturrilhas');
   ellipsoid(side*.205*hi,.105,.15,.12,.085,.245,null);
  }
  // Subtle abdominal definition appears at lower fat and greater muscular definition.
  if(fat<30&&mus>.35)for(const side of [-1,1])for(let j=0;j<3;j++){
-  const mesh=ellipsoid(side*.11,2.34-j*.145,.22*wa,.085,.064,.018,'abdomen',accent);mesh.material=accent;
+  const mesh=ellipsoid(side*.11,2.34-j*.145,.22*wa,.077,.052,.009,'abdomen',accent);mesh.material=accent;
  }
  // Fat-dependent lower abdominal apron and fold shadows; approximation, not diagnosis.
  if(fat>25){
