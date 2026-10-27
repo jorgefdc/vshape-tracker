@@ -4,6 +4,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {loadHumanModel} from './loadHumanModel.js';
 export default function HumanAvatarPreview({url='/models/human-male.glb',measurements={}}){
  const host=useRef(null),[message,setMessage]=useState('Carregando...'),[fileUrl,setFileUrl]=useState(null);
+ useEffect(()=>()=>{if(fileUrl)URL.revokeObjectURL(fileUrl)},[fileUrl]);
  useEffect(()=>{
   const node=host.current;let disposed=false,frame,model;
   const scene=new THREE.Scene();scene.background=new THREE.Color('#f2f2f2');
