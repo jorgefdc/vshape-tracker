@@ -9,6 +9,10 @@ export async function loadHumanModel(url,measurements={},options={}){
  const loader=new GLTFLoader();
  const gltf=await loader.loadAsync(url);
  const root=gltf.scene;
+ // Some rigged meshes are authored with body width on the Z axis.
+ const initialBox=new THREE.Box3().setFromObject(root);
+ const initialSize=initialBox.getSize(new THREE.Vector3());
+ if(initialSize.z>initialSize.x*1.5){root.rotation.y=-Math.PI/2;root.updateWorldMatrix(true,true)}
  root.traverse(node=>{
   if(node.isMesh){node.castShadow=false;node.receiveShadow=false;node.frustumCulled=false}
  });
