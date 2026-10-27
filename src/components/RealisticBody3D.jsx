@@ -59,6 +59,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const shortsMat=new THREE.MeshStandardMaterial({color:style.shortsColor||'#222c3e',roughness:.91,side:THREE.DoubleSide});
  materials.push(skin,accent,foldMat,veinMat,shirtMat,shortsMat);
  const muscleMode=style?.muscleSkin===true;
+ const relief=muscleMode?(.008+.034*mus)*clamp((32-fat)/20,.2,1.2):0;
+ const bump=(v,c,w)=>Math.exp(-Math.pow((v-c)/w,2));
  const muscleMat=new THREE.MeshStandardMaterial({color:0xb33d38,roughness:.88,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
  const muscleDark=new THREE.MeshStandardMaterial({color:0x7f2928,roughness:.94,side:THREE.DoubleSide});
  materials.push(muscleMat,muscleDark);
@@ -95,7 +97,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   const points=[],faces=[];
   for(const [y,x,z,rx,rz] of smooth)for(let j=0;j<segments;j++){
    const theta=j/segments*Math.PI*2;
-   points.push(side*x+Math.cos(theta)*rx,y, z+Math.sin(theta)*rz);
+   const swell=relief*(.8*bump(y,2.66,.13)+.6*bump(y,2.42,.16)+.35*bump(y,2.01,.15));
+   points.push(side*x+Math.cos(theta)*(rx+swell),y,z+Math.sin(theta)*(rz+swell));
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
@@ -162,7 +165,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   smooth.push(levels[levels.length-1]);
   const vertices=[],faces=[];
   for(const [y,rx,rz,z] of smooth)for(let j=0;j<segments;j++){
-   const a=j/segments*Math.PI*2;vertices.push(x+Math.cos(a)*rx,y,z+Math.sin(a)*rz);
+   const a=j/segments*Math.PI*2;const swell=relief*(.8*bump(y,1.35,.24)+.65*bump(y,.56,.16));vertices.push(x+Math.cos(a)*(rx+swell),y,z+Math.sin(a)*(rz+swell));
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
@@ -172,7 +175,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
   geometry.setIndex(faces);geometry.computeVertexNormals();
   add(geometry,skin,'quadriceps');
-  if(muscleMode){
+  if(false){
    const bands=[{top:1.52,bottom:.99,angle:Math.PI/2,span:1.25,muscle:'quadriceps'},{top:.68,bottom:.36,angle:Math.PI/2,span:1.05,muscle:'panturrilhas'}];
    for(const band of bands){const rows=smooth.filter(q=>q[0]<=band.top&&q[0]>=band.bottom),vv=[],ff=[],n=24;
     for(const [y,rx,rz,z] of rows)for(let j=0;j<=n;j++){const a=band.angle-band.span/2+band.span*j/n;vv.push(x+Math.cos(a)*(rx+.009),y,z+Math.sin(a)*(rz+.009))}
@@ -205,10 +208,10 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale+belly*.016],[1.99,.32*wa*fatScale,.225*wa*fatScale+belly*.042],[1.88,.34*wa*fatScale,.235*wa*fatScale+belly*.045],[1.73,.38*hi,.255*hi+belly*.018],[1.62,.375*hi,.25*hi],[1.54,.34*hi,.225*hi],[1.48,.29*hi,.195*hi],[1.43,.24*hi,.16*hi]];
  const verts=[],indices=[],segments=96;
  const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
- smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;verts.push(Math.sin(a)*rx,y,Math.cos(a)*rz)}});
+ smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;const pec=bump(y,2.44,.14)*bump(Math.abs(Math.sin(a)),.48,.3);const abs=bump(y,2.04,.29)*bump(Math.abs(Math.sin(a)),.25,.22)*(1-.22*Math.cos((y-1.83)*35));const swell=relief*(pec*1.3+abs*.48);verts.push(Math.sin(a)*(rx+swell),y,Math.cos(a)*(rz+swell))}});
  for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
- if(muscleMode){
+ if(false){
   // Muscle plates conform to the torso loft. Separate curved regions form pectorals, abdominals and back.
   function torsoRegion(yTop,yBottom,center,halfWidth,muscle,material=muscleMat){
    const rows=smoothRings.filter(q=>q[0]<=yTop&&q[0]>=yBottom),vv=[],ff=[],n=24;
@@ -227,7 +230,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
    torsoRegion(2.24,1.91,side*2.69,.40,'costas');
   }
  }
- if(style.clothing==='casual'){
+ if(style.clothing==='casual'&&!muscleMode){
   // Independent fabric silhouette: smooth waist and hem, with room for chest and abdomen.
   const shirtRings=[];
   for(const [y,rx,rz] of smoothRings){
