@@ -71,7 +71,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   skin.map=null;skin.color.set('#f2b6aa');
   skin.onBeforeCompile=shader=>{
    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vMusclePoint;').replace('#include <begin_vertex>','#include <begin_vertex>\nvMusclePoint=position;');
-   shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\\nvarying vec3 vMusclePoint;').replace('#include <color_fragment>',`#include <color_fragment>
+   shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vMusclePoint;').replace('#include <color_fragment>',`#include <color_fragment>
     float muscleBands=abs(sin(vMusclePoint.y*18.0+sin(vMusclePoint.x*12.0)*0.65));
     float muscleFibers=sin(vMusclePoint.y*105.0+vMusclePoint.x*40.0)*0.055;
     float groove=smoothstep(0.76,0.98,muscleBands);
@@ -320,7 +320,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
   let active=true,id;function render(){if(!active)return;controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}render();
   sceneRef.current={figure,controls,camera};return()=>{active=false;cancelAnimationFrame(id);resize.disconnect();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);controls.dispose();figure.dispose();renderer.dispose();renderer.domElement.remove();sceneRef.current=null};
- },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin]);
+ },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin,style?.muscleDisplay]);
  useEffect(()=>{if(!sceneRef.current)return;const theta=angle*Math.PI/180,dist=7.9;sceneRef.current.camera.position.set(Math.sin(theta)*dist,2.1,Math.cos(theta)*dist);sceneRef.current.controls.update()},[angle]);
  return <div className="real-body"><div ref={host} className="real-body-canvas"/>{error&&<p>{error}</p>}{!compact&&<><div className="avatar-turn"><button className="outline" onClick={()=>onAngleChange?.((angle+315)%360)}>↶ 45°</button><span>Gire o corpo com o dedo</span><button className="outline" onClick={()=>onAngleChange?.((angle+45)%360)}>45° ↷</button></div><p className="hint">Avatar 3D ilustrativo. Definição, veias e dobras são estimativas visuais, não reconstrução médica.</p><div className="muscle-chips">{Object.keys(EX).map(key=><button key={key} className={selected===key?'active':''} onClick={()=>setSelected(key)}>{NAMES[key]}</button>)}</div><h2>{NAMES[selected]} — exercícios</h2>{EX[selected].map(name=><div className="line" key={name}><span>{name}</span>{onChooseExercise&&<button className="outline" onClick={()=>onChooseExercise(name,selected)}>Adicionar</button>}</div>)}</>}</div>;
 }
