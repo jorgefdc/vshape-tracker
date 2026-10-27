@@ -54,18 +54,18 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  }
  const tones={claro:'#f2c9a8',medio:'#c68d64',moreno:'#95613e',escuro:'#593b2e'};
  skin.color.set(tones[style.skinTone]||tones.medio);
- if(muscleMode){skin.roughness=.92;skin.clearcoat=0;}
  if(skinOverlay)skin.map=null;
  const shirtMat=new THREE.MeshStandardMaterial({color:style.shirtColor||'#2563eb',roughness:.94,side:THREE.DoubleSide});
  const shortsMat=new THREE.MeshStandardMaterial({color:style.shortsColor||'#222c3e',roughness:.91,side:THREE.DoubleSide});
  materials.push(skin,accent,foldMat,veinMat,shirtMat,shortsMat);
  const muscleMode=style?.muscleSkin===true;
- const relief=muscleMode?(.025+.075*mus)*clamp((34-fat)/20,.35,1.35):0;
  const bump=(v,c,w)=>Math.exp(-Math.pow((v-c)/w,2));
  const muscleMat=new THREE.MeshStandardMaterial({color:0xb33d38,roughness:.88,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
  const muscleDark=new THREE.MeshStandardMaterial({color:0x7f2928,roughness:.94,side:THREE.DoubleSide});
  materials.push(muscleMat,muscleDark);
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
+ const relief=muscleMode?(.025+.075*mus)*clamp((34-fat)/20,.35,1.35):0;
+ if(muscleMode){skin.roughness=.92;skin.clearcoat=0;}
  const fatScale=1+(f-.8)*.15;
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
  function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,64,48),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
