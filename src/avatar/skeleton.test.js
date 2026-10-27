@@ -21,6 +21,7 @@ test('Changing proportions builds a new internal skeleton',()=>{
  const second=buildInternalSkeleton({shoulderScale:1.25,hipScale:.9,armScale:1.1});
  const a=first.children.find(x=>x.name==='Clavícula');
  const b=second.children.find(x=>x.name==='Clavícula');
- assert.notEqual(a.geometry.attributes.position.getX(0),b.geometry.attributes.position.getX(0));
+ a.geometry.computeBoundingBox();b.geometry.computeBoundingBox();
+ assert.notEqual(a.geometry.boundingBox.max.x,b.geometry.boundingBox.max.x);
  first.userData.dispose();second.userData.dispose();
 });
