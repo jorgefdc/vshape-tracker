@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import * as THREE from 'three';
+import {buildInternalSkeleton} from './InternalSkeleton3D.js';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 const EX={
  ombros:['Elevação lateral','Desenvolvimento com halteres','Crucifixo inverso'],
@@ -67,6 +68,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const relief=(muscleMode?.055:.015)+(.045*mus)*clamp((35-fat)/23,.28,1.18);
  if(muscleMode){skin.roughness=.92;skin.clearcoat=0;}
  const fatScale=1+(f-.8)*.15;
+ const skeletonVisible=style?.skeletonView===true;
+ if(skeletonVisible){skin.transparent=true;skin.opacity=.17;skin.depthWrite=false;skin.roughness=.82;}
  // Osso subcutaneo: protuberancias suaves incorporadas a pele, nunca pecas flutuantes.
  const boneLevel=clamp(Number(style?.boneProminence??55)/100,0,1);
  const bone=boneLevel*clamp((32-fat)/18,.12,.85)*(.95-.12*mus);
@@ -299,7 +302,9 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
    }
   }
  }
- group.scale.setScalar(bodyHeight);return {group,dispose(){group.traverse(o=>{if(o.geometry)o.geometry.dispose()});materials.forEach(x=>x.dispose());texture.dispose()}};
+ const skeleton=buildInternalSkeleton({shoulderScale:sh,hipScale:hi,legScale:th,armScale:ar,sex});
+ skeleton.name='Esqueleto interno';group.add(skeleton);
+ group.scale.setScalar(bodyHeight);return {group,dispose(){skeleton.userData.dispose?.();group.traverse(o=>{if(o.geometry&&!skeleton.getObjectById(o.id))o.geometry.dispose()});materials.forEach(x=>x.dispose());texture.dispose()}};
 }
 export default function RealisticBody3D({measurements,sex='male',fat=22,definition=55,veins=false,compact=false,angle=0,onAngleChange,onChooseExercise,skinOverlay=false,style={}}){
  const host=useRef(null),sceneRef=useRef(null),[selected,setSelected]=useState('ombros'),[error,setError]=useState('');
@@ -320,7 +325,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
   let active=true,id;function render(){if(!active)return;try{controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}catch(e){active=false;console.error('Renderização do avatar:',e);setError('Falha na renderização 3D. As medidas continuam salvas.')}}render();
   sceneRef.current={figure,controls,camera};return()=>{active=false;cancelAnimationFrame(id);resize.disconnect();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);controls.dispose();figure.dispose();renderer.dispose();renderer.domElement.remove();sceneRef.current=null};
- },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin,style?.boneProminence]);
+ },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin,style?.boneProminence,style?.skeletonView]);
  useEffect(()=>{if(!sceneRef.current)return;const theta=angle*Math.PI/180,dist=7.9;sceneRef.current.camera.position.set(Math.sin(theta)*dist,2.1,Math.cos(theta)*dist);sceneRef.current.controls.update()},[angle]);
  return <div className="real-body"><div ref={host} className="real-body-canvas"/>{error&&<p>{error}</p>}{!compact&&<><div className="avatar-turn"><button className="outline" onClick={()=>onAngleChange?.((angle+315)%360)}>↶ 45°</button><span>Gire o corpo com o dedo</span><button className="outline" onClick={()=>onAngleChange?.((angle+45)%360)}>45° ↷</button></div><p className="hint">Avatar 3D ilustrativo. Definição, veias e dobras são estimativas visuais, não reconstrução médica.</p><div className="muscle-chips">{Object.keys(EX).map(key=><button key={key} className={selected===key?'active':''} onClick={()=>setSelected(key)}>{NAMES[key]}</button>)}</div><h2>{NAMES[selected]} — exercícios</h2>{EX[selected].map(name=><div className="line" key={name}><span>{name}</span>{onChooseExercise&&<button className="outline" onClick={()=>onChooseExercise(name,selected)}>Adicionar</button>}</div>)}</>}</div>;
 }
