@@ -54,12 +54,13 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  }
  const tones={claro:'#f2c9a8',medio:'#c68d64',moreno:'#95613e',escuro:'#593b2e'};
  skin.color.set(tones[style.skinTone]||tones.medio);
+ if(muscleMode){skin.roughness=.92;skin.clearcoat=0;}
  if(skinOverlay)skin.map=null;
  const shirtMat=new THREE.MeshStandardMaterial({color:style.shirtColor||'#2563eb',roughness:.94,side:THREE.DoubleSide});
  const shortsMat=new THREE.MeshStandardMaterial({color:style.shortsColor||'#222c3e',roughness:.91,side:THREE.DoubleSide});
  materials.push(skin,accent,foldMat,veinMat,shirtMat,shortsMat);
  const muscleMode=style?.muscleSkin===true;
- const relief=muscleMode?(.008+.034*mus)*clamp((32-fat)/20,.2,1.2):0;
+ const relief=muscleMode?(.025+.075*mus)*clamp((34-fat)/20,.35,1.35):0;
  const bump=(v,c,w)=>Math.exp(-Math.pow((v-c)/w,2));
  const muscleMat=new THREE.MeshStandardMaterial({color:0xb33d38,roughness:.88,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
  const muscleDark=new THREE.MeshStandardMaterial({color:0x7f2928,roughness:.94,side:THREE.DoubleSide});
@@ -108,7 +109,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
   geometry.setIndex(faces);geometry.computeVertexNormals();
   const mesh=add(geometry,skin,'biceps');
-  if(muscleMode){
+  if(false){
    // Raised anatomical bands follow the parametric arm surface, rather than floating spheres.
    for(const [top,bottom,arc,muscle] of [[2.69,2.49,1.35,'ombros'],[2.47,2.19,.92,'biceps'],[2.13,1.87,.85,'biceps']]){
     const vv=[],ff=[],n=18;
