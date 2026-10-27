@@ -20,8 +20,8 @@ export function deformHumanMesh(root,measurements={}){
  let meshes=0,vertices=0;
  root.traverse(node=>{
   if(!node.isMesh||!node.geometry?.attributes?.position)return;
-  // Skinned geometry must be shaped by authored morph targets, not by moving bind-pose vertices.
-  if(node.isSkinnedMesh)return;
+  // Temporary fallback also edits the bind-pose geometry of skinned meshes.
+  // Production characters should use authored shape keys for anatomically accurate deformation.
   const geometry=node.geometry.clone();
   node.geometry=geometry;
   const attr=geometry.attributes.position;
