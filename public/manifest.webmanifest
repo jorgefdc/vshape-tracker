@@ -1,10 +1,22 @@
 {
   "name": "V Shape Tracker",
   "short_name": "V Shape",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
   "background_color": "#0b1018",
   "theme_color": "#0b1018",
-  "description": "Treinos, séries, cargas e evolução."
+  "description": "Treinos, séries, cargas e evolução.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
