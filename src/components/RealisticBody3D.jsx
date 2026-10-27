@@ -67,6 +67,10 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const relief=muscleMode?(.025+.075*mus)*clamp((34-fat)/20,.35,1.35):0;
  if(muscleMode){skin.roughness=.92;skin.clearcoat=0;}
  const fatScale=1+(f-.8)*.15;
+ // Osso subcutaneo: protuberancias suaves incorporadas a pele, nunca pecas flutuantes.
+ const boneLevel=clamp(Number(style?.boneProminence??55)/100,0,1);
+ const bone=boneLevel*clamp((39-fat)/25,.16,1)*(.75-.22*mus);
+ const ridge=(v,c,w)=>Math.exp(-Math.pow((v-c)/w,2));
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
  function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,64,48),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
  function tapered(x1,y1,z1,x2,y2,z2,r1,r2,muscle){const a=new THREE.Vector3(x1,y1,z1),b=new THREE.Vector3(x2,y2,z2),diff=b.clone().sub(a),mesh=add(new THREE.CylinderGeometry(r2,r1,diff.length(),40,14),skin,muscle);mesh.position.copy(a.add(b).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());return mesh}
@@ -99,7 +103,8 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   for(const [y,x,z,rx,rz] of smooth)for(let j=0;j<segments;j++){
    const theta=j/segments*Math.PI*2;
    const swell=relief*(.8*bump(y,2.66,.13)+.6*bump(y,2.42,.16)+.35*bump(y,2.01,.15));
-   points.push(side*x+Math.cos(theta)*(rx+swell),y,z+Math.sin(theta)*(rz+swell));
+   const boneRidge=bone*(.015*ridge(y,2.17,.065)+.010*ridge(y,1.72,.05));
+   points.push(side*x+Math.cos(theta)*(rx+swell+boneRidge),y,z+Math.sin(theta)*(rz+swell+boneRidge));
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
@@ -166,7 +171,7 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   smooth.push(levels[levels.length-1]);
   const vertices=[],faces=[];
   for(const [y,rx,rz,z] of smooth)for(let j=0;j<segments;j++){
-   const a=j/segments*Math.PI*2;const swell=relief*(.8*bump(y,1.35,.24)+.65*bump(y,.56,.16));vertices.push(x+Math.cos(a)*(rx+swell),y,z+Math.sin(a)*(rz+swell));
+   const a=j/segments*Math.PI*2;const front=Math.max(0,Math.sin(a));const swell=relief*(.8*bump(y,1.35,.24)+.65*bump(y,.56,.16));const kneecap=.027*bone*ridge(y,.86,.075)*front*ridge(Math.cos(a),0,.8);const shin=.014*bone*ridge(y,.46,.31)*front*ridge(Math.cos(a),0,.48);const ankle=.018*bone*ridge(y,.18,.075)*(ridge(Math.cos(a),1,.27)+ridge(Math.cos(a),-1,.27));vertices.push(x+Math.cos(a)*(rx+swell+kneecap+shin+ankle),y,z+Math.sin(a)*(rz+swell+kneecap+shin+ankle));
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
@@ -209,7 +214,14 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const rings=[[2.78,.29*sh,.19*ch],[2.72,.44*sh,.205*ch],[2.53,.43*ch,.245*ch],[2.29,.36*ch,.22*ch],[2.12,.31*wa*fatScale,.21*wa*fatScale+belly*.016],[1.99,.32*wa*fatScale,.225*wa*fatScale+belly*.042],[1.88,.34*wa*fatScale,.235*wa*fatScale+belly*.045],[1.73,.38*hi,.255*hi+belly*.018],[1.62,.375*hi,.25*hi],[1.54,.34*hi,.225*hi],[1.48,.29*hi,.195*hi],[1.43,.24*hi,.16*hi]];
  const verts=[],indices=[],segments=96;
  const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
- smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;const front=Math.max(0,Math.cos(a)),back=Math.max(0,-Math.cos(a));const pec=bump(y,2.44,.14)*bump(Math.abs(Math.sin(a)),.48,.3)*front;const abs=bump(y,2.04,.29)*bump(Math.abs(Math.sin(a)),.25,.22)*(1-.22*Math.cos((y-1.83)*35))*front;const lat=bump(y,2.37,.28)*bump(Math.abs(Math.sin(a)),.62,.25)*back;const scapula=bump(y,2.54,.17)*bump(Math.abs(Math.sin(a)),.38,.17)*back;const erector=bump(y,2.02,.42)*bump(Math.abs(Math.sin(a)),.14,.12)*back;const swell=relief*(pec*1.3+abs*.48+lat*.92+scapula*.38+erector*.36);verts.push(Math.sin(a)*(rx+swell),y,Math.cos(a)*(rz+swell))}});
+ smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;const front=Math.max(0,Math.cos(a)),back=Math.max(0,-Math.cos(a));const pec=bump(y,2.44,.14)*bump(Math.abs(Math.sin(a)),.48,.3)*front;const abs=bump(y,2.04,.29)*bump(Math.abs(Math.sin(a)),.25,.22)*(1-.22*Math.cos((y-1.83)*35))*front;const lat=bump(y,2.37,.28)*bump(Math.abs(Math.sin(a)),.62,.25)*back;const scapula=bump(y,2.54,.17)*bump(Math.abs(Math.sin(a)),.38,.17)*back;const erector=bump(y,2.02,.42)*bump(Math.abs(Math.sin(a)),.14,.12)*back;const swell=relief*(pec*1.3+abs*.48+lat*.92+scapula*.38+erector*.36);
+  const clavicle=bone*.043*ridge(y,2.68,.058)*ridge(Math.abs(Math.sin(a)),.48,.3)*front;
+  const sternum=bone*.013*ridge(y,2.48,.23)*ridge(Math.abs(Math.sin(a)),0,.13)*front;
+  const ribs=bone*.011*ridge(y,2.24,.14)*ridge(Math.abs(Math.sin(a)),.72,.19)*front;
+  const shoulderBlade=bone*.028*ridge(y,2.48,.19)*ridge(Math.abs(Math.sin(a)),.47,.21)*back;
+  const iliacCrest=bone*.024*ridge(y,1.76,.075)*ridge(Math.abs(Math.sin(a)),.85,.16);
+  const skeletalRidge=clavicle+sternum+ribs+shoulderBlade+iliacCrest;
+  verts.push(Math.sin(a)*(rx+swell+skeletalRidge),y,Math.cos(a)*(rz+swell+skeletalRidge))}});
  for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
  if(false){
@@ -304,7 +316,7 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
   let active=true,id;function render(){if(!active)return;try{controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}catch(e){active=false;console.error('Renderização do avatar:',e);setError('Falha na renderização 3D. As medidas continuam salvas.')}}render();
   sceneRef.current={figure,controls,camera};return()=>{active=false;cancelAnimationFrame(id);resize.disconnect();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);controls.dispose();figure.dispose();renderer.dispose();renderer.domElement.remove();sceneRef.current=null};
- },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin]);
+ },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin,style?.boneProminence]);
  useEffect(()=>{if(!sceneRef.current)return;const theta=angle*Math.PI/180,dist=7.9;sceneRef.current.camera.position.set(Math.sin(theta)*dist,2.1,Math.cos(theta)*dist);sceneRef.current.controls.update()},[angle]);
  return <div className="real-body"><div ref={host} className="real-body-canvas"/>{error&&<p>{error}</p>}{!compact&&<><div className="avatar-turn"><button className="outline" onClick={()=>onAngleChange?.((angle+315)%360)}>↶ 45°</button><span>Gire o corpo com o dedo</span><button className="outline" onClick={()=>onAngleChange?.((angle+45)%360)}>45° ↷</button></div><p className="hint">Avatar 3D ilustrativo. Definição, veias e dobras são estimativas visuais, não reconstrução médica.</p><div className="muscle-chips">{Object.keys(EX).map(key=><button key={key} className={selected===key?'active':''} onClick={()=>setSelected(key)}>{NAMES[key]}</button>)}</div><h2>{NAMES[selected]} — exercícios</h2>{EX[selected].map(name=><div className="line" key={name}><span>{name}</span>{onChooseExercise&&<button className="outline" onClick={()=>onChooseExercise(name,selected)}>Adicionar</button>}</div>)}</>}</div>;
 }
