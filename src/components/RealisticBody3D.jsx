@@ -295,14 +295,14 @@ export default function RealisticBody3D({measurements,sex='male',fat=22,definiti
   scene.add(new THREE.HemisphereLight(0xffffff,0x9c8b81,skinOverlay?2.25:2.65));
   const key=new THREE.DirectionalLight(0xffe6d2,skinOverlay?1.25:1.45);key.position.set(2,5,5);scene.add(key);
   const rim=new THREE.DirectionalLight(0xffe6d8,skinOverlay?.75:.9);rim.position.set(-3,3,-4);scene.add(rim);
-  const figure=createFigure(measurements,sex,fat,definition,veins,skinOverlay,style);scene.add(figure.group);
+  let figure;try{figure=createFigure(measurements,sex,fat,definition,veins,skinOverlay,style);scene.add(figure.group)}catch(e){console.error('Avatar 3D:',e);setError('Não foi possível gerar o avatar 3D. Tente o Modelo simples.');renderer.dispose();renderer.domElement.remove();return}
   const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.enableZoom=false;controls.enableDamping=true;controls.minPolarAngle=Math.PI/2;controls.maxPolarAngle=Math.PI/2;controls.target.set(0,1.73,0);controls.update();
   const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=null;
   function pointerDown(e){down={x:e.clientX,y:e.clientY}}
   function pointerUp(e){if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>9)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-rect.left)/rect.width)*2-1;pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;ray.setFromCamera(pointer,camera);const hits=ray.intersectObjects(figure.group.children,true);const muscle=hits.find(h=>h.object.userData.muscle)?.object.userData.muscle;if(muscle)setSelected(muscle)}
   renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
   const resize=new ResizeObserver(()=>{if(!node.clientWidth)return;renderer.setSize(node.clientWidth,compact?300:440);camera.aspect=node.clientWidth/(compact?300:440);camera.updateProjectionMatrix()});resize.observe(node);
-  let active=true,id;function render(){if(!active)return;controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}render();
+  let active=true,id;function render(){if(!active)return;try{controls.update();renderer.render(scene,camera);id=requestAnimationFrame(render)}catch(e){active=false;console.error('Renderização do avatar:',e);setError('Falha na renderização 3D. As medidas continuam salvas.')}}render();
   sceneRef.current={figure,controls,camera};return()=>{active=false;cancelAnimationFrame(id);resize.disconnect();renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);controls.dispose();figure.dispose();renderer.dispose();renderer.domElement.remove();sceneRef.current=null};
  },[measurements,sex,fat,definition,veins,compact,skinOverlay,style?.skinTone,style?.clothing,style?.shirtColor,style?.shortsColor,style?.muscleSkin]);
  useEffect(()=>{if(!sceneRef.current)return;const theta=angle*Math.PI/180,dist=7.9;sceneRef.current.camera.position.set(Math.sin(theta)*dist,2.1,Math.cos(theta)*dist);sceneRef.current.controls.update()},[angle]);
