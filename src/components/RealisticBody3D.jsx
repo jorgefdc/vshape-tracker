@@ -64,12 +64,12 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const muscleDark=new THREE.MeshStandardMaterial({color:0x7f2928,roughness:.94,side:THREE.DoubleSide});
  materials.push(muscleMat,muscleDark);
  const f=clamp(fat/30,.25,1.65),mus=clamp(definition/100,0,1),sh=clamp(val(m?.shoulders,112)/112,.75,1.35)*(isFemale?.9:1),ch=clamp(val(m?.chest,98)/98,.75,1.35),wa=clamp(val(m?.waist,82)/82,.7,1.6),hi=clamp(val(m?.hips,95)/95,.75,1.5)*(isFemale?1.13:1),ar=clamp(val(m?.arm,33)/33,.65,1.6),th=clamp(val(m?.thigh,55)/55,.7,1.5),ca=clamp(val(m?.calf,36)/36,.65,1.5),bodyHeight=clamp(val(m?.height,175)/175,.85,1.15);
- const relief=muscleMode?(.025+.075*mus)*clamp((34-fat)/20,.35,1.35):0;
+ const relief=(muscleMode?.055:.015)+(.045*mus)*clamp((35-fat)/23,.28,1.18);
  if(muscleMode){skin.roughness=.92;skin.clearcoat=0;}
  const fatScale=1+(f-.8)*.15;
  // Osso subcutaneo: protuberancias suaves incorporadas a pele, nunca pecas flutuantes.
  const boneLevel=clamp(Number(style?.boneProminence??55)/100,0,1);
- const bone=boneLevel*clamp((39-fat)/25,.16,1)*(.75-.22*mus);
+ const bone=boneLevel*clamp((43-fat)/23,.28,1.15)*(.94-.19*mus);
  const ridge=(v,c,w)=>Math.exp(-Math.pow((v-c)/w,2));
  function add(geometry,material=skin,muscle=null){const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=false;mesh.receiveShadow=false;if(muscle)mesh.userData.muscle=muscle;group.add(mesh);return mesh}
  function ellipsoid(x,y,z,sx,sy,sz,muscle,material=skin){const mesh=add(new THREE.SphereGeometry(1,64,48),material,muscle);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);return mesh}
@@ -103,7 +103,9 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   for(const [y,x,z,rx,rz] of smooth)for(let j=0;j<segments;j++){
    const theta=j/segments*Math.PI*2;
    const swell=relief*(.8*bump(y,2.66,.13)+.6*bump(y,2.42,.16)+.35*bump(y,2.01,.15));
-   const boneRidge=bone*(.015*ridge(y,2.17,.065)+.010*ridge(y,1.72,.05));
+   const elbowProfile=.028*ridge(y,2.16,.058)*ridge(Math.sin(theta),-.6,.55);
+   const wristProfile=.020*ridge(y,1.70,.055)*ridge(Math.cos(theta),0,.56);
+   const boneRidge=bone*(elbowProfile+wristProfile);
    points.push(side*x+Math.cos(theta)*(rx+swell+boneRidge),y,z+Math.sin(theta)*(rz+swell+boneRidge));
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
@@ -171,7 +173,9 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
   smooth.push(levels[levels.length-1]);
   const vertices=[],faces=[];
   for(const [y,rx,rz,z] of smooth)for(let j=0;j<segments;j++){
-   const a=j/segments*Math.PI*2;const front=Math.max(0,Math.sin(a));const swell=relief*(.8*bump(y,1.35,.24)+.65*bump(y,.56,.16));const kneecap=.027*bone*ridge(y,.86,.075)*front*ridge(Math.cos(a),0,.8);const shin=.014*bone*ridge(y,.46,.31)*front*ridge(Math.cos(a),0,.48);const ankle=.018*bone*ridge(y,.18,.075)*(ridge(Math.cos(a),1,.27)+ridge(Math.cos(a),-1,.27));vertices.push(x+Math.cos(a)*(rx+swell+kneecap+shin+ankle),y,z+Math.sin(a)*(rz+swell+kneecap+shin+ankle));
+   const a=j/segments*Math.PI*2;const front=Math.max(0,Math.sin(a));const swell=relief*(.8*bump(y,1.35,.24)+.65*bump(y,.56,.16));const kneecap=.082*bone*ridge(y,.84,.085)*front*ridge(Math.cos(a),0,.74);
+   const shin=.037*bone*ridge(y,.46,.29)*front*ridge(Math.cos(a),0,.34);
+   const ankle=.058*bone*ridge(y,.18,.067)*(ridge(Math.cos(a),1,.34)+ridge(Math.cos(a),-1,.34));vertices.push(x+Math.cos(a)*(rx+swell+kneecap+shin+ankle),y,z+Math.sin(a)*(rz+swell+kneecap+shin+ankle));
   }
   for(let i=0;i<smooth.length-1;i++)for(let j=0;j<segments;j++){
    const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;
@@ -215,12 +219,14 @@ function createFigure(m,sex,fat,definition,veins,skinOverlay=false,style={}){
  const verts=[],indices=[],segments=96;
  const smoothRings=[];for(let k=0;k<rings.length-1;k++){const a=rings[Math.max(0,k-1)],b=rings[k],c=rings[k+1],d=rings[Math.min(rings.length-1,k+2)];for(let t=0;t<5;t++){const u=t/5;const curve=j=>0.5*((2*b[j])+(-a[j]+c[j])*u+(2*a[j]-5*b[j]+4*c[j]-d[j])*u*u+(-a[j]+3*b[j]-3*c[j]+d[j])*u*u*u);smoothRings.push([curve(0),curve(1),curve(2)])}}smoothRings.push(rings[rings.length-1]);
  smoothRings.forEach(([y,rx,rz])=>{for(let j=0;j<segments;j++){const a=j/segments*Math.PI*2;const front=Math.max(0,Math.cos(a)),back=Math.max(0,-Math.cos(a));const pec=bump(y,2.44,.14)*bump(Math.abs(Math.sin(a)),.48,.3)*front;const abs=bump(y,2.04,.29)*bump(Math.abs(Math.sin(a)),.25,.22)*(1-.22*Math.cos((y-1.83)*35))*front;const lat=bump(y,2.37,.28)*bump(Math.abs(Math.sin(a)),.62,.25)*back;const scapula=bump(y,2.54,.17)*bump(Math.abs(Math.sin(a)),.38,.17)*back;const erector=bump(y,2.02,.42)*bump(Math.abs(Math.sin(a)),.14,.12)*back;const swell=relief*(pec*1.3+abs*.48+lat*.92+scapula*.38+erector*.36);
-  const clavicle=bone*.043*ridge(y,2.68,.058)*ridge(Math.abs(Math.sin(a)),.48,.3)*front;
-  const sternum=bone*.013*ridge(y,2.48,.23)*ridge(Math.abs(Math.sin(a)),0,.13)*front;
-  const ribs=bone*.011*ridge(y,2.24,.14)*ridge(Math.abs(Math.sin(a)),.72,.19)*front;
-  const shoulderBlade=bone*.028*ridge(y,2.48,.19)*ridge(Math.abs(Math.sin(a)),.47,.21)*back;
-  const iliacCrest=bone*.024*ridge(y,1.76,.075)*ridge(Math.abs(Math.sin(a)),.85,.16);
-  const skeletalRidge=clavicle+sternum+ribs+shoulderBlade+iliacCrest;
+  const clavicle=bone*.113*ridge(y,2.68,.045)*ridge(Math.abs(Math.sin(a)),.48,.32)*front;
+  const sternum=bone*.038*ridge(y,2.46,.21)*ridge(Math.abs(Math.sin(a)),0,.11)*front;
+  const ribs=bone*.024*ridge(y,2.23,.13)*ridge(Math.abs(Math.sin(a)),.77,.19)*front;
+  const shoulderBlade=bone*.092*ridge(y,2.49,.19)*ridge(Math.abs(Math.sin(a)),.48,.18)*back;
+  const iliacCrest=bone*.078*ridge(y,1.75,.075)*ridge(Math.abs(Math.sin(a)),.84,.16);
+  const spineFurrow=-bone*.027*ridge(y,2.12,.53)*ridge(Math.abs(Math.sin(a)),0,.095)*back;
+  const infraclavicularHollow=-bone*.018*ridge(y,2.57,.063)*ridge(Math.abs(Math.sin(a)),.50,.26)*front;
+  const skeletalRidge=clavicle+sternum+ribs+shoulderBlade+iliacCrest+spineFurrow+infraclavicularHollow;
   verts.push(Math.sin(a)*(rx+swell+skeletalRidge),y,Math.cos(a)*(rz+swell+skeletalRidge))}});
  for(let i=0;i<smoothRings.length-1;i++)for(let j=0;j<segments;j++){const a=i*segments+j,b=i*segments+(j+1)%segments,c=(i+1)*segments+j,d=(i+1)*segments+(j+1)%segments;indices.push(a,c,b,b,c,d)}
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();add(geo,skin,'abdomen');
