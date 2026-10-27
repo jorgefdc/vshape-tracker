@@ -4,7 +4,7 @@ import {measurementsToMorphs,applyMorphs} from './shapeMapping.js';
 
 // Independent prototype adapter. It does not replace RealisticBody3D (V13).
 export async function loadHumanModel(url,measurements={},options={}){
- if(!url||!url.toLowerCase().split('?')[0].endsWith('.glb'))throw new Error('Informe o caminho de um modelo .glb');
+ if(!url||(!url.startsWith('blob:')&&!url.toLowerCase().split('?')[0].endsWith('.glb')))throw new Error('Informe o caminho de um modelo .glb');
  const loader=new GLTFLoader();
  const gltf=await loader.loadAsync(url);
  const root=gltf.scene;
