@@ -10,7 +10,7 @@ async function precacheApplication() {
   if (!response.ok) throw new Error('Could not fetch app shell');
   const html = await response.clone().text();
   await cache.put('/', response);
-  const urls = [...new Set([...html.matchAll(/(?:src|href)=["'](\\/assets\\/[^"']+)["']/g)].map(m => m[1]))];
+  const urls = [...new Set([...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map(m => m[1]).filter(path => path.startsWith('/assets/')))];
   await Promise.all([...PRECACHE.slice(1), ...urls].map(async path => {
     try {
       const res = await fetch(path, { cache: 'reload' });
