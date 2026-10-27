@@ -34,8 +34,12 @@ all_world = [obj.matrix_world @ vert.co for obj in meshes for vert in obj.data.v
 minimum = min(v.y for v in all_world)
 maximum = max(v.y for v in all_world)
 height = max(maximum - minimum, 1e-5)
-middle = (min(v.x for v in all_world) + max(v.x for v in all_world)) / 2
-width = max(max(v.x for v in all_world) - min(v.x for v in all_world), 1e-5)
+span_x = max(v.x for v in all_world) - min(v.x for v in all_world)
+span_z = max(v.z for v in all_world) - min(v.z for v in all_world)
+lateral_axis = 'z' if span_z > span_x * 1.4 else 'x'
+depth_axis = 'x' if lateral_axis == 'z' else 'z'
+middle = (min(getattr(v, lateral_axis) for v in all_world) + max(getattr(v, lateral_axis) for v in all_world)) / 2
+width = max(max(span_x, span_z), 1e-5)
 
 for obj in meshes:
     bpy.context.view_layer.objects.active = obj
@@ -51,14 +55,14 @@ for obj in meshes:
                 world = obj.matrix_world @ basis.data[index].co
                 y = (world.y - minimum) / height
                 vertical = math.exp(-((y - center_y) / radius_y) ** 2)
-                lateral = abs(world.x - middle) / (width * 0.5)
+                lateral = abs(getattr(world, lateral_axis) - middle) / (width * 0.5)
                 arm_zone = min(1, max(0, (lateral - .63) * 3))
                 zone = arm_zone if key == "arm_size" else 1 - arm_zone
                 if key in ("thigh_size", "calf_size"):
                     zone = 1
                 intensity = sign * .22 * strength * vertical * zone
-                world.x = middle + (world.x - middle) * (1 + intensity)
-                world.z *= 1 + intensity * .70
+                setattr(world, lateral_axis, middle + (getattr(world, lateral_axis) - middle) * (1 + intensity))
+                setattr(world, depth_axis, getattr(world, depth_axis) * (1 + intensity * .70))
                 local = obj.matrix_world.inverted() @ world
                 shape.data[index].co = local
             shape.value = 0
