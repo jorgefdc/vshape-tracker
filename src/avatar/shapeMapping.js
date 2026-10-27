@@ -18,12 +18,12 @@ export function applyMorphs(root,morphs){
  root.traverse(object=>{
   if(!object.isMesh||!object.morphTargetDictionary||!object.morphTargetInfluences)return;
   for(const [name,value] of Object.entries(morphs)){
-   const index=object.morphTargetDictionary[name];
-   if(index!==undefined){
-    // GLB morph targets can use negative weights only when the asset explicitly supports them.
-    // Default to the non-negative range to avoid inverted or distorted bodies.
-    object.morphTargetInfluences[index]=clamp(value,0,1);found.add(name)
-   }
+   const dictionary=object.morphTargetDictionary;
+   const positive=dictionary[name+'_larger']??dictionary[name];
+   const negative=dictionary[name+'_smaller'];
+   if(positive!==undefined)object.morphTargetInfluences[positive]=Math.max(0,value);
+   if(negative!==undefined)object.morphTargetInfluences[negative]=Math.max(0,-value);
+   if(value>=0&&positive!==undefined||value<0&&negative!==undefined)found.add(name);
   }
  });
  return {found:[...found],missing:Object.keys(morphs).filter(key=>!found.has(key))};
