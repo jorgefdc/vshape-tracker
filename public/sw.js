@@ -1,6 +1,6 @@
 // V Shape Tracker offline shell. No application data is stored here: workout data remains in localStorage.
-const CACHE = 'vshape-app-gorilla-v4';
-const PRECACHE = ['/', '/manifest.webmanifest', '/icon.svg'];
+const CACHE = 'vshape-app-gorila-png-v5';
+const PRECACHE = ['/', '/manifest.webmanifest', '/gorila-192.png', '/gorila-512.png', '/gorila-maskable-192.png', '/gorila-maskable-512.png'];
 const sameOrigin = url => new URL(url, self.location.origin).origin === self.location.origin;
 
 async function precacheApplication() {
