@@ -1,6 +1,6 @@
 {
-  "name": "V Shape Tracker",
-  "short_name": "V Shape",
+  "name": "Personal Pessoal",
+  "short_name": "Personal",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -10,7 +10,7 @@
   ],
   "background_color": "#0b1018",
   "theme_color": "#0b1018",
-  "description": "Treinos, séries, cargas e evolução.",
+  "description": "Seu treino. Seu ritmo. Sua evolução.",
   "icons": [
     {
       "src": "/icon-192.png",
