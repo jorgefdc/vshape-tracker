@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 
 const CATALOG={
  pulldown:{
@@ -14,9 +14,10 @@ export function getExerciseGuide(name=''){
  return null;
 }
 function GorillaPull(){
- const [paused,setPaused]=useState(false);
+ const [paused,setPaused]=useState(false),svgRef=useRef(null);
+ useEffect(()=>{const svg=svgRef.current;if(!svg)return;if(paused)svg.pauseAnimations();else svg.unpauseAnimations()},[paused]);
  return <div className={'pg-animation'+(paused?' pg-paused':'')}>
- <svg viewBox="0 0 520 480" role="img" aria-label="Animação ilustrativa do gorila realizando a puxada alta: barra desce até a região superior do peito e retorna, com os cotovelos descendo lateralmente.">
+ <svg ref={svgRef} viewBox="0 0 520 480" role="img" aria-label="Animação ilustrativa do gorila realizando a puxada alta: barra desce até a região superior do peito e retorna, com os cotovelos descendo lateralmente.">
   <defs><linearGradient id="pgBg" x1="0" x2="1" y1="0" y2="1"><stop stopColor="#1b2535"/><stop offset="1" stopColor="#080d15"/></linearGradient><linearGradient id="pgFur" x1="0" x2="1"><stop stopColor="#626675"/><stop offset=".42" stopColor="#343846"/><stop offset="1" stopColor="#1a202d"/></linearGradient><linearGradient id="pgSkin" x1="0" x2="1"><stop stopColor="#c4b8bb"/><stop offset="1" stopColor="#5f606d"/></linearGradient></defs>
   <rect width="520" height="480" rx="16" fill="url(#pgBg)"/>
   <g opacity=".15" stroke="#a3b5cb"><path d="M40 50 V450 M470 50 V450 M35 90 H485 M35 270 H485"/><path d="M30 420 H500"/></g>
