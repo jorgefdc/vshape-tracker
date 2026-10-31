@@ -1,53 +1,46 @@
 import React,{useState} from 'react';
-import BodyRenderGuard from './BodyRenderGuard.jsx';
-import MuscleAvatar360 from './MuscleAvatar360.jsx';
-import BodyGoal from './BodyGoal.jsx';
-import RealisticBody3D from './RealisticBody3D.jsx';
-const fields=[['height','Altura','cm'],['weight','Peso','kg'],['shoulders','Ombros (circunferência)','cm'],['chest','Peito','cm'],['waist','Cintura','cm'],['hips','Quadril','cm'],['arm','Braço (contraído)','cm'],['thigh','Coxa','cm'],['calf','Panturrilha','cm']];
-const empty=()=>Object.fromEntries(fields.map(([key])=>[key,'']));
-const number=v=>{const n=Number(String(v??'').replace(',','.'));return Number.isFinite(n)&&n>0?n:null};
-const fmt=v=>v==null?'—':v.toLocaleString('pt-BR',{maximumFractionDigits:1});
-function BodyAvatar({m}) {
- const n=k=>number(m?.[k]);
- const height=n('height')||175,shoulders=n('shoulders')||112,chest=n('chest')||98,waist=n('waist')||82,hips=n('hips')||95,arm=n('arm')||32,thigh=n('thigh')||55,calf=n('calf')||36;
- const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
- // Relative illustrative widths, not anatomical reconstruction.
- const shoulderW=clamp(shoulders/2.65,32,60),chestW=clamp(chest/2.65,28,54),waistW=clamp(waist/2.65,23,49),hipW=clamp(hips/2.65,27,51);
- const armW=clamp(arm/3.7,7,16),thighW=clamp(thigh/3.2,12,23),calfW=clamp(calf/3.3,8,15),scale=clamp(height/175,.88,1.1);
- const torso=`M ${120-shoulderW} 91 Q ${120-chestW} 112 ${120-chestW} 133 L ${120-waistW} 192 Q ${120-hipW} 212 ${120-hipW} 226 L ${120+hipW} 226 Q ${120+hipW} 212 ${120+waistW} 192 L ${120+chestW} 133 Q ${120+chestW} 112 ${120+shoulderW} 91 Z`;
- return <svg viewBox="0 0 240 400" role="img" aria-label="Avatar frontal ilustrativo com proporções aproximadas das medidas registradas" style={{width:'100%',maxWidth:310,height:390,display:'block',margin:'auto'}}>
- <defs><linearGradient id="bodyTone" x1="0" x2="1"><stop offset="0" stopColor="#88b7c4"/><stop offset=".5" stopColor="#b5d8df"/><stop offset="1" stopColor="#5f93a8"/></linearGradient></defs>
- <g transform={`translate(120 0) scale(${scale} 1) translate(-120 0)`} fill="url(#bodyTone)" stroke="#31566a" strokeWidth="1.8" strokeLinejoin="round">
- <ellipse cx="120" cy="47" rx="22" ry="29"/><rect x="110" y="72" width="20" height="20" rx="5"/>
- <path d={torso}/>
- <path d={`M ${120-shoulderW} 94 Q ${120-shoulderW-armW-7} 102 ${120-shoulderW-armW} 132 L ${120-shoulderW-armW-5} 190 Q ${120-shoulderW-armW} 208 ${120-shoulderW-4} 194 L ${120-shoulderW+5} 139 Z`}/>
- <path d={`M ${120+shoulderW} 94 Q ${120+shoulderW+armW+7} 102 ${120+shoulderW+armW} 132 L ${120+shoulderW+armW+5} 190 Q ${120+shoulderW+armW} 208 ${120+shoulderW+4} 194 L ${120+shoulderW-5} 139 Z`}/>
- <path d={`M ${120-hipW} 224 L ${120-8} 224 L ${120-7} 307 L ${120-thighW-3} 308 Z`}/>
- <path d={`M ${120+hipW} 224 L ${120+8} 224 L ${120+7} 307 L ${120+thighW+3} 308 Z`}/>
- <path d={`M ${120-thighW-3} 309 L ${120-7} 309 L ${120-8} 372 L ${120-calfW-11} 372 Z`}/>
- <path d={`M ${120+thighW+3} 309 L ${120+7} 309 L ${120+8} 372 L ${120+calfW+11} 372 Z`}/>
- </g><g stroke="#f2c43d" strokeDasharray="3 4" strokeWidth="1" opacity=".8"><line x1={120-chestW} y1="135" x2={120+chestW} y2="135"/><line x1={120-waistW} y1="191" x2={120+waistW} y2="191"/></g>
- <g fontSize="10" fill="#f4d66e"><text x="6" y="132">Peito</text><text x="6" y="190">Cintura</text></g></svg>;
-}
-export default function BodyMeasurements({records=[],onSave,onDelete,onChooseExercise,goal,onSaveGoal,onBuildWorkout,sex='male',onSexChange,appearance,onAppearanceChange}){
- const style=appearance?.style||{skinTone:'medio',clothing:'none',shirtColor:'#2563eb',shortsColor:'#222c3e'};
- const muscleSkin=appearance?.style?.muscleSkin===true;
- const setStyle=patch=>onAppearanceChange?.({...appearance,style:{...style,...patch}});
- const [showComparison,setShowComparison]=useState(true);
- const [viewStyle,setViewStyle]=useState('anatomical'),[rotation,setRotation]=useState(0);
- const [draft,setDraft]=useState(empty),[when,setWhen]=useState(new Date().toISOString().slice(0,10)),[selected,setSelected]=useState('latest');
- const sorted=[...(Array.isArray(records)?records:[])].sort((a,b)=>new Date(b.date)-new Date(a.date)),current=selected==='latest'?sorted[0]:sorted.find(x=>x.id===selected)||sorted[0],previous=sorted.find(x=>x.id!==current?.id);
- const ratio=number(current?.shoulders)&&number(current?.waist)?number(current.shoulders)/number(current.waist):null;
- function save(e){e.preventDefault();if(!fields.some(([k])=>number(draft[k]))){alert('Informe ao menos uma medida.');return}const values={};for(const [k] of fields){if(draft[k]!==''&&number(draft[k])===null){alert('Corrija a medida: '+k);return}values[k]=number(draft[k])}onSave({id:String(Date.now()),date:when+'T12:00:00',...values});setDraft(empty());setSelected('latest')}
- return <><h1>Medidas corporais</h1><section className="card"><h2>Perfil corporal</h2><p>Escolha o modelo de referência para o avatar. As suas medidas continuam determinando as proporções.</p><div className="filters"><button className={sex==='male'?'primary':'outline'} onClick={()=>onSexChange('male')}>Homem</button><button className={sex==='female'?'primary':'outline'} onClick={()=>onSexChange('female')}>Mulher</button></div></section><p>Registre suas medidas e acompanhe o shape em V. O avatar 360° é um modelo tridimensional esquemático com proporções aproximadas, não uma reprodução anatômica exata do seu corpo.</p>
- <section className="card"><h2>Camadas do avatar {muscleSkin?'· Músculos ativos':''}</h2><div className="filters"><button className={!muscleSkin&&style.clothing!=='casual'?'primary':'outline'} onClick={()=>setStyle({muscleSkin:false,clothing:'none'})}>Pele</button><button className={muscleSkin?'primary':'outline'} onClick={()=>{setViewStyle('anatomical');onAppearanceChange?.({...appearance,definition:90,style:{...style,muscleSkin:true,clothing:'none'}})}}>Músculos sob a pele</button><button className={!muscleSkin&&style.clothing==='casual'?'primary':'outline'} onClick={()=>setStyle({muscleSkin:false,clothing:'casual'})}>Roupa</button></div><p className="hint">A opção Músculos sob a pele realça os volumes do corpo sem placas vermelhas. Selecione Anatomia 3D para visualizar.</p></section><section className="card"><h2>Estrutura óssea sob a pele</h2><p className="hint">Relevo sutil de clavículas, escápulas, quadril, cotovelos, punhos, joelhos e tornozelos. A aparência acompanha a gordura corporal ilustrativa.</p><label className="hint">Proeminência óssea: {style.boneProminence??55}%<input className="avatar-angle" type="range" min="0" max="100" step="5" value={style.boneProminence??55} onChange={e=>setStyle({boneProminence:Number(e.target.value)})}/></label><label className="hint" style={{display:"flex",alignItems:"center",gap:8,marginTop:12}}><input type="checkbox" checked={style.skeletonView===true} onChange={e=>setStyle({skeletonView:e.target.checked,clothing:e.target.checked?"none":style.clothing,muscleSkin:e.target.checked?false:style.muscleSkin})}/> Inspecionar esqueleto sob a pele (transparência experimental)</label><p className="hint">O esqueleto fica internamente posicionado no corpo mesmo quando esta opção está desligada. A representação é anatômica aproximada, não médica.</p></section><section className="card"><h2>Provador virtual 3D</h2><p>Personalize a pele e experimente roupas no avatar atual e na meta.</p><label className="hint">Tom de pele<select className="formfield" value={style.skinTone} onChange={e=>setStyle({skinTone:e.target.value})}><option value="claro">Claro</option><option value="medio">Médio</option><option value="moreno">Moreno</option><option value="escuro">Escuro</option></select></label><label className="hint">Roupa<select className="formfield" value={style.clothing} onChange={e=>setStyle({clothing:e.target.value})}><option value="none">Sem roupa — anatomia</option><option value="casual">Camiseta e bermuda</option></select></label>{style.clothing==='casual'&&<div className="measurement-grid"><label className="hint">Cor da camiseta<input className="formfield" type="color" value={style.shirtColor} onChange={e=>setStyle({shirtColor:e.target.value})}/></label><label className="hint">Cor da bermuda<input className="formfield" type="color" value={style.shortsColor} onChange={e=>setStyle({shortsColor:e.target.value})}/></label></div>}</section>
- <div className="filters"><button className={showComparison?"primary":"outline"} onClick={()=>setShowComparison(true)}>Atual × Meta</button><button className={!showComparison?"primary":"outline"} onClick={()=>setShowComparison(false)}>Avatar individual</button></div>
- {showComparison&&<BodyRenderGuard><BodyGoal appearance={appearance} sex={sex} current={sorted[0]} goal={goal} onSave={onSaveGoal} onBuildWorkout={onBuildWorkout}/></BodyRenderGuard>}
- {!showComparison&&<section className="card"><h2>Avatar corporal</h2><div className="filters"><button className={viewStyle==='anatomical'?'primary':'outline'} onClick={()=>setViewStyle('anatomical')}>Anatomia 3D</button><button className={viewStyle==='simple'?'primary':'outline'} onClick={()=>setViewStyle('simple')}>Modelo simples</button></div>{sorted.length?<><label className="hint">Medição exibida</label><select value={selected} onChange={e=>setSelected(e.target.value)}><option value="latest">Mais recente</option>{sorted.map(r=><option key={r.id} value={r.id}>{new Date(r.date).toLocaleDateString('pt-BR')}</option>)}</select></>:<p>Cadastre suas primeiras medidas para personalizar o avatar.</p>}
- <p className="hint">O modo Anatomia 3D apresenta volumes corporais mais naturais, pele sombreada e variações entre os modelos masculino e feminino. Ainda é um modelo ilustrativo, não um escaneamento real.</p>{viewStyle==='anatomical'?<><BodyRenderGuard><RealisticBody3D style={style} sex={sex} measurements={current} fat={appearance?.fat??22} definition={appearance?.definition??55} veins={appearance?.veins??false} angle={rotation} onAngleChange={setRotation} onChooseExercise={onChooseExercise}/></BodyRenderGuard><div className="card"><h2>Aparência do avatar</h2><label className="hint">Gordura corporal ilustrativa: {appearance?.fat??22}%<input className="avatar-angle" type="range" min="8" max="45" value={appearance?.fat??22} onChange={e=>onAppearanceChange?.({...appearance,fat:Number(e.target.value)})}/></label><label className="hint">Definição muscular ilustrativa: {appearance?.definition??55}%<input className="avatar-angle" type="range" min="0" max="100" value={appearance?.definition??55} onChange={e=>onAppearanceChange?.({...appearance,definition:Number(e.target.value)})}/></label><label className="hint"><input type="checkbox" checked={appearance?.veins??false} onChange={e=>onAppearanceChange?.({...appearance,veins:e.target.checked})}/> Veias aparentes (visual)</label></div></>:<MuscleAvatar360 sex={sex} measurements={current} onChooseExercise={onChooseExercise}/>}<details><summary>Ver avatar frontal simplificado</summary><BodyAvatar m={current}/></details>{ratio&&<div className="stat"><small>Relação circunferência ombros / cintura</small><strong>{ratio.toFixed(2).replace('.',',')}</strong></div>}
- {current&&previous&&<div className="line"><span>Variação da cintura desde a medição anterior</span><b>{number(current.waist)&&number(previous.waist)?fmt(number(current.waist)-number(previous.waist))+' cm':'—'}</b></div>}</section>}
 
- <form className="card" onSubmit={save}><h2>Nova medição</h2><label className="hint">Data<input className="formfield" type="date" value={when} max={new Date().toISOString().slice(0,10)} onChange={e=>setWhen(e.target.value)} required/></label><div className="measurement-grid">{fields.map(([key,label,unit])=><label className="hint" key={key}>{label} ({unit})<input className="formfield" inputMode="decimal" type="text" placeholder="Ex.: 90,5" value={draft[key]} onChange={e=>setDraft(v=>({...v,[key]:e.target.value}))}/></label>)}</div><button className="primary full" type="submit">Salvar medidas</button></form>
- <section className="card"><h2>Histórico de medições</h2>{sorted.length===0?<p>Nenhuma medição salva.</p>:sorted.map(r=><div className="line" key={r.id}><span>{new Date(r.date).toLocaleDateString('pt-BR')}<small className="report-sub">Peso {fmt(number(r.weight))} kg · Cintura {fmt(number(r.waist))} cm · Ombros {fmt(number(r.shoulders))} cm</small></span><button className="outline" onClick={()=>{if(confirm('Excluir esta medição?'))onDelete(r.id)}}>Excluir</button></div>)}</section>
- </>;
+const FIELDS=[['weight','Peso','kg'],['height','Altura','cm'],['neck','Pescoço','cm'],['shoulders','Ombros','cm'],['chest','Peito','cm'],['waist','Cintura','cm'],['abdomen','Abdômen','cm'],['hips','Quadril','cm'],['armLeft','Braço esquerdo','cm'],['armRight','Braço direito','cm'],['forearmLeft','Antebraço esquerdo','cm'],['forearmRight','Antebraço direito','cm'],['thighLeft','Coxa esquerda','cm'],['thighRight','Coxa direita','cm'],['calfLeft','Panturrilha esquerda','cm'],['calfRight','Panturrilha direita','cm']];
+const today=()=>{const x=new Date();return [x.getFullYear(),String(x.getMonth()+1).padStart(2,'0'),String(x.getDate()).padStart(2,'0')].join('-')};
+const empty=()=>({date:today(),values:Object.fromEntries(FIELDS.map(([k])=>[k,'']))});
+const fmtDate=x=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(x||''))return x||'—';const [y,m,d]=x.split('-');return d+'/'+m+'/'+y};
+const numeric=x=>{if(x==null||String(x).trim()==='')return null;const n=Number(String(x).replace(',','.'));return Number.isFinite(n)&&n>0&&n<1000?Math.round(n*100)/100:NaN};
+const fmt=(x,u)=>x==null?'—':Number(x).toLocaleString('pt-BR',{maximumFractionDigits:2})+' '+u;
+
+function Trend({records,field}) {
+ const points=[...records].filter(r=>Number.isFinite(r.values?.[field])&&r.values[field]>0).sort((a,b)=>a.date.localeCompare(b.date));
+ if(points.length<2)return <p className="hint">Registre esta medida em duas datas para visualizar a evolução.</p>;
+ let min=Math.min(...points.map(x=>x.values[field])),max=Math.max(...points.map(x=>x.values[field]));const pad=Math.max((max-min)*.2,.5);min-=pad;max+=pad;
+ const xy=points.map((p,i)=>[40+i*280/(points.length-1),160-((p.values[field]-min)/(max-min))*125]);
+ return <svg viewBox="0 0 340 205" role="img" aria-label="Gráfico de evolução corporal" style={{width:'100%',maxHeight:260}}>
+ <line x1="40" y1="24" x2="40" y2="171" stroke="#52647a"/><line x1="40" y1="171" x2="326" y2="171" stroke="#52647a"/>
+ {[0,.5,1].map(v=><g key={v}><line x1="40" y1={160-v*125} x2="326" y2={160-v*125} stroke="#38495c" strokeDasharray="3 5"/><text x="35" y={164-v*125} textAnchor="end" fontSize="9" fill="#adbed3">{(min+v*(max-min)).toFixed(1)}</text></g>)}
+ <polyline fill="none" stroke="#f2c43d" strokeWidth="3" points={xy.map(([x,y])=>x+','+y).join(' ')}/>
+ {xy.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="3.5" fill="#f2c43d"/>)}
+ <text x="40" y="191" fontSize="10" fill="#afbed0">{fmtDate(points[0].date)}</text><text x="320" y="191" textAnchor="end" fontSize="10" fill="#afbed0">{fmtDate(points.at(-1).date)}</text>
+ </svg>
+}
+export default function BodyMeasurements({records=[],onSave,onDelete}) {
+ const [draft,setDraft]=useState(empty),[editing,setEditing]=useState(null),[showForm,setShowForm]=useState(false),[metric,setMetric]=useState('weight');
+ const sorted=[...records].sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||'').localeCompare(a.createdAt||'')),latest=sorted[0],previous=sorted[1];
+ const newEntry=()=>{setDraft(empty());setEditing(null);setShowForm(true)};
+ const edit=r=>{setDraft({date:r.date,values:Object.fromEntries(FIELDS.map(([k])=>[k,r.values?.[k]==null?'':String(r.values[k])]))});setEditing(r.id);setShowForm(true);window.scrollTo({top:0,behavior:'smooth'})};
+ const submit=e=>{e.preventDefault();if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)){alert('Informe uma data válida.');return}
+ const values=Object.fromEntries(FIELDS.map(([k])=>[k,numeric(draft.values[k])]));if(Object.values(values).some(Number.isNaN)){alert('Informe apenas valores positivos válidos.');return}
+ if(Object.values(values).every(v=>v===null)){alert('Preencha pelo menos uma medida.');return}
+ const old=records.find(x=>x.id===editing);onSave({id:editing||Date.now()+'-'+Math.random().toString(36).slice(2,8),date:draft.date,createdAt:old?.createdAt||new Date().toISOString(),values});setShowForm(false);setEditing(null)};
+ return <><h1>Medidas corporais</h1><p>Registre seu peso e medidas para acompanhar sua evolução. Sem boneco 3D.</p>
+ <button className="primary" onClick={newEntry}>+ Adicionar medidas</button>
+ {showForm&&<form className="card" onSubmit={submit}><h2>{editing?'Editar medição':'Nova medição'}</h2><label className="hint">Data<input className="formfield" type="date" required value={draft.date} onChange={e=>setDraft(d=>({...d,date:e.target.value}))}/></label>
+ <div className="measurement-grid">{FIELDS.map(([k,label,unit])=><label className="hint" key={k}>{label} ({unit})<input className="formfield" type="text" inputMode="decimal" placeholder="Opcional" value={draft.values[k]??''} onChange={e=>setDraft(d=>({...d,values:{...d.values,[k]:e.target.value}}))}/></label>)}</div>
+ <p className="hint">Você pode preencher somente as medidas que realizou. Meça sempre nas mesmas condições.</p>
+ <div className="filters"><button className="primary" type="submit">Salvar medidas</button><button className="outline" type="button" onClick={()=>setShowForm(false)}>Cancelar</button></div></form>}
+ {!latest?<section className="card"><h2>Comece seu histórico</h2><p>Nenhum registro ainda. Cadastre sua primeira medição.</p></section>:<>
+ <section className="card"><h2>Último registro · {fmtDate(latest.date)}</h2><div className="stats">{FIELDS.filter(([k])=>latest.values?.[k]!=null).slice(0,8).map(([k,label,unit])=><div className="stat" key={k}><small>{label}</small><strong>{fmt(latest.values[k],unit)}</strong>{previous?.values?.[k]!=null&&<small>Variação: {(latest.values[k]-previous.values[k]>0?'+':'')+(latest.values[k]-previous.values[k]).toFixed(1)} {unit}</small>}</div>)}</div></section>
+ <section className="card"><h2>Gráfico de evolução</h2><select aria-label="Selecionar medida do gráfico" value={metric} onChange={e=>setMetric(e.target.value)}>{FIELDS.map(([k,label,u])=><option key={k} value={k}>{label} ({u})</option>)}</select><Trend records={sorted} field={metric}/></section>
+ <section className="card"><h2>Histórico de medidas</h2>{sorted.map(r=><details key={r.id} style={{borderBottom:'1px solid #34475a',padding:'12px 0'}}><summary>{fmtDate(r.date)}</summary>
+ {FIELDS.filter(([k])=>r.values?.[k]!=null).map(([k,label,u])=><div className="line" key={k}><span>{label}</span><strong>{fmt(r.values[k],u)}</strong></div>)}
+ <div className="filters"><button className="outline" onClick={()=>edit(r)}>Editar</button><button className="outline" onClick={()=>{if(confirm('Excluir medidas de '+fmtDate(r.date)+'?'))onDelete(r.id)}}>Excluir</button></div></details>)}</section>
+ </>}
+ <p className="hint">Medidas salvas neste navegador, incluídas no backup JSON. Para trocar de celular, exporte e importe seu backup.</p></>;
 }
