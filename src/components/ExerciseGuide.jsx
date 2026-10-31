@@ -1,18 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
+import GorillaExerciseMotion from './GorillaExerciseMotion.jsx';
+export {getExerciseGuide} from '../exerciseGuides.js';
 
-const CATALOG={
- pulldown:{
-  title:'Puxada alta na polia',group:'Costas',muscles:['Grande dorsal','Redondo maior','Bíceps e músculos estabilizadores'],
-  steps:['Ajuste o apoio para manter as coxas firmes e segure a barra com pegada confortável.','Mantenha o peito elevado e conduza os cotovelos para baixo, trazendo a barra na direção da parte superior do peito.','Retorne lentamente, permitindo que os braços se estendam sem perder o controle.'],
-  tip:'Evite elevar os ombros em direção às orelhas; mantenha o tronco estável.',
-  mistake:'Não balance o corpo para trás nem puxe a barra atrás da nuca.'
- }
-};
-export function getExerciseGuide(name=''){
- const s=name.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
- if(/puxada alta|puxada na polia|lat pulldown/.test(s))return CATALOG.pulldown;
- return null;
-}
 function GorillaPull(){
  const [paused,setPaused]=useState(false),svgRef=useRef(null);
  useEffect(()=>{const svg=svgRef.current;if(!svg)return;if(paused)svg.pauseAnimations();else svg.unpauseAnimations()},[paused]);
@@ -60,12 +49,12 @@ export default function ExerciseGuide({guide,onClose}){
  return <div className="pg-guide-backdrop" role="presentation" onClick={onClose}>
   <div className="pg-guide-dialog" role="dialog" aria-modal="true" aria-labelledby="pg-guide-title" onClick={e=>e.stopPropagation()}>
    <div className="pg-guide-header"><div><span className="accent">PERSONAL GORILA · EXECUÇÃO</span><h2 id="pg-guide-title">{guide.title}</h2></div><button className="outline" onClick={onClose} aria-label="Fechar orientação">✕</button></div>
-   <GorillaPull/>
+   {guide.motion==='pulldown'?<GorillaPull/>:<GorillaExerciseMotion key={guide.sourceName} motion={guide.motion}/>}
    <section className="pg-guide-section"><h3>💪 Músculos trabalhados</h3><div className="pg-muscles">{guide.muscles.map(m=><span key={m}>{m}</span>)}</div></section>
    <section className="pg-guide-section"><h3>Como fazer</h3><ol>{guide.steps.map(x=><li key={x}>{x}</li>)}</ol></section>
    <section className="pg-guide-section"><h3>✓ Dica de postura</h3><p>{guide.tip}</p></section>
    <section className="pg-guide-section"><h3>⚠ Erro comum</h3><p>{guide.mistake}</p></section>
-   <p className="hint">Animação simplificada, não é uma demonstração biomecânica validada. Respeite sua amplitude e peça orientação a um profissional para ajustar a execução.</p>
+   <p className="hint">Animação esquemática de orientação, não uma demonstração biomecânica validada. Respeite sua amplitude e peça orientação a um profissional para ajustar a execução.</p>
   </div>
  </div>;
 }
