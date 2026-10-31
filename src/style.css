@@ -19,3 +19,27 @@
 .measure-target-pair span:last-child b{color:#f2c43d}
 .measure-target-row>small{display:block;margin-top:9px}
 .measure-goal-hit{color:#75e5a1;font-size:12px}
+
+/* Guia de execução Personal Gorila — mobile first */
+.pg-guide-trigger{width:100%;background:#302a17;color:#f2c43d;border:1px solid #96772c;border-radius:12px;padding:12px;font-weight:750;margin:6px 0 12px;text-align:center}
+.pg-guide-backdrop{position:fixed;inset:0;z-index:50;background:#000c;display:flex;justify-content:center;align-items:center;padding:12px}
+.pg-guide-dialog{width:100%;max-width:640px;max-height:94dvh;overflow-y:auto;overscroll-behavior:contain;background:#141e2c;border:1px solid #42516b;border-radius:16px;padding:15px;box-shadow:0 14px 50px #0008}
+.pg-guide-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.pg-guide-header .accent{font-size:11px;font-weight:800}
+.pg-guide-header h2{font-size:23px;margin:4px 0 14px}
+.pg-guide-header>button{padding:8px 12px;font-size:19px}
+.pg-animation{overflow:hidden;border-radius:14px;border:1px solid #334357}
+.pg-animation>svg{display:block;width:100%;max-height:400px}
+.pg-bar{animation:pg-pulldown 3.6s ease-in-out infinite;transform:translateY(100px)}
+@keyframes pg-pulldown{0%,10%{transform:translateY(100px)}38%,60%{transform:translateY(202px)}90%,100%{transform:translateY(100px)}}
+.pg-paused .pg-bar,.pg-paused svg *{animation-play-state:paused!important}
+.pg-animation-controls{display:flex;justify-content:space-between;align-items:center;background:#101827;padding:8px 12px;gap:10px;color:#afbfce;font-size:12px}
+.pg-animation-controls button{padding:6px 10px;font-size:12px}
+.pg-guide-section{padding:13px 3px;border-bottom:1px solid #36475d}
+.pg-guide-section h3{color:#f2c43d;font-size:15px;margin:0 0 10px}
+.pg-guide-section p{margin:0}
+.pg-guide-section ol{padding-left:22px;color:#e5e9f0;line-height:1.55;margin:0}
+.pg-guide-section li{margin-bottom:8px}
+.pg-muscles{display:flex;flex-wrap:wrap;gap:7px}
+.pg-muscles span{font-size:12px;border:1px solid #65572d;border-radius:15px;background:#2e2a1c;color:#f9d96b;padding:7px 10px}
+@media(prefers-reduced-motion:reduce){.pg-bar{animation:none;transform:translateY(202px)}}
