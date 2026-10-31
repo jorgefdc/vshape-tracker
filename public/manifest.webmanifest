@@ -1,6 +1,6 @@
 {
-  "name": "Personal Pessoal",
-  "short_name": "Personal",
+  "name": "Personal Gorila",
+  "short_name": "Gorila",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -10,8 +10,14 @@
   ],
   "background_color": "#0b1018",
   "theme_color": "#0b1018",
-  "description": "Seu treino. Seu ritmo. Sua evolução.",
+  "description": "Aplicativo para organizar treinos e acompanhar a evolução.",
   "icons": [
+    {
+      "src": "/gorila-logo.png",
+      "sizes": "112x112",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
